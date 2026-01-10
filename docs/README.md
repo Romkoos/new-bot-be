@@ -21,7 +21,7 @@
 - [Ingestion topic index](./ingestion/README.md)
 - [Orchestration](./ingestion/Orchestration.md) (use-case flow + idempotency)
 - [Entry points](./ingestion/EntryPoints.md) (Cron/CLI participation)
-- [Config](./ingestion/Config.md) (MAKO_* env vars via module config)
+- [Config](./ingestion/Config.md) (INGEST_* env vars via module config)
 - [Scraping](./ingestion/Scraping.md) (Playwright behavior + selectors)
 - [Hashing](./ingestion/Hashing.md) (normalization + stable hashing)
 - [Storage](./ingestion/Storage.md) (SQLite schema + dedup)

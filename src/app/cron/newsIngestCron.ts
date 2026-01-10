@@ -1,9 +1,9 @@
 import cron from "node-cron";
 import { buildContainer } from "../di/container";
-import { readMakoConfig } from "../../modules/news-ingestion/public";
+import { readIngestionConfig } from "../../modules/news-ingestion/public";
 
 /**
- * Cron entry-point for Mako Channel 12 ingestion.
+ * Cron entry-point for the news ingestion use-case.
  *
  * Responsibilities:
  * - Build the DI container once.
@@ -17,17 +17,17 @@ import { readMakoConfig } from "../../modules/news-ingestion/public";
 async function main(): Promise<void> {
   const container = buildContainer();
 
-  const schedule = readMakoConfig(process.env).cronSchedule;
+  const schedule = readIngestionConfig(process.env).cronSchedule;
 
   async function runJob(): Promise<void> {
     const startedAt = Date.now();
-    container.logger.info("cron:mako:ingestion:start", { schedule });
+    container.logger.info("cron:news:ingestion:start", { schedule });
 
     try {
-      const result = await container.ingest.mako.run({ dryRun: false });
+      const result = await container.ingest.news.run({ dryRun: false });
       const durationMs = Date.now() - startedAt;
 
-      container.logger.info("cron:mako:ingestion:done", {
+      container.logger.info("cron:news:ingestion:done", {
         durationMs,
         source: result.source,
         dryRun: result.dryRun,
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
       });
     } catch (error) {
       const durationMs = Date.now() - startedAt;
-      container.logger.error("cron:mako:ingestion:error", { durationMs, error });
+      container.logger.error("cron:news:ingestion:error", { durationMs, error });
     }
   }
 
@@ -45,8 +45,7 @@ async function main(): Promise<void> {
     void runJob();
   });
 
-  container.logger.info("Cron scheduler started (mako ingestion).", { schedule });
+  container.logger.info("Cron scheduler started (news ingestion).", { schedule });
 }
 
 void main();
-

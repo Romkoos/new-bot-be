@@ -1,13 +1,13 @@
 /**
- * Result DTO returned by the Mako Channel 12 ingestion use-case.
+ * Result DTO returned by the news ingestion use-case.
  *
  * This is designed for logging/observability (counts + timing) and for CLI output.
  */
-export interface MakoIngestResult {
+export interface NewsIngestResult {
   /**
-   * The news source identifier persisted in the database.
+   * The news source identifier that was used for hashing/storage in this run.
    */
-  readonly source: "mako-channel12";
+  readonly source: string;
 
   /**
    * Whether persistence writes were skipped.
@@ -15,7 +15,7 @@ export interface MakoIngestResult {
   readonly dryRun: boolean;
 
   /**
-   * Number of items scraped from the page (after selecting the last 5).
+   * Number of items scraped from the page (after selecting the configured amount).
    */
   readonly scrapedCount: number;
 

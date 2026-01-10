@@ -12,8 +12,8 @@ This document describes:
 
 Start with log events:
 
-- `cron:mako:ingestion:error { error: ... }`
-- `cli:mako:ingestion:error { error: ... }`
+- `cron:news:ingestion:error { error: ... }`
+- `cli:news:ingestion:error { error: ... }`
 
 Then map the error to the subsystem:
 
@@ -56,10 +56,10 @@ Mitigations:
 
 - Run headful to observe behavior:
   - CLI: `--headful`
-  - Or set `MAKO_SCRAPER_HEADLESS=false`
+  - Or set `INGEST_SCRAPER_HEADLESS=false`
 - Increase timeouts (code change) if the site is consistently slower.
 - Use persistent context:
-  - `MAKO_USER_DATA_DIR=...`
+  - `INGEST_USER_DATA_DIR=...`
 
 ### Drawer button not found
 
@@ -83,8 +83,8 @@ Mitigations:
 - Run headful and inspect the page.
 - Update selectors in `PwMakoScraper.ts` if the site changed.
 - Use persistent context / real Chrome channel:
-  - `MAKO_USER_DATA_DIR=...`
-  - `MAKO_CHROMIUM_CHANNEL=chrome`
+  - `INGEST_USER_DATA_DIR=...`
+  - `INGEST_CHROMIUM_CHANNEL=chrome`
 
 ### Items selector returns zero nodes
 
@@ -95,7 +95,7 @@ Where:
 Symptoms:
 
 - scraper returns `[]`
-- orchestrator logs `ingestion:mako:scraped { count: 0 }`
+- orchestrator logs `ingestion:news:scraped { count: 0 }`
 
 Root causes:
 
@@ -149,7 +149,7 @@ Hashing is local CPU work and typically does not fail unless:
 
 If hashes change unexpectedly across runs:
 
-- check normalization rules in `MakoIngestOrch`
+- check normalization rules in `NewsIngestOrch`
 - check canonicalization in `Sha256Hasher`
 - avoid changing `source` or normalization without a migration plan
 
@@ -218,7 +218,7 @@ If the process still hangs, likely causes are:
 
 If `newItemsCount` is 0 and you see:
 
-- `ingestion:mako:early-exit:no-new-items`
+- `ingestion:news:early-exit:no-new-items`
 
 That means idempotency worked and the system found nothing new to store.
 

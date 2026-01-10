@@ -1,4 +1,4 @@
-# Ingestion (topic): Mako news ingestion
+# Ingestion (topic): News ingestion
 
 ## Purpose / scope
 
@@ -26,7 +26,7 @@ In this repo, *ingestion* is a use-case that:
 
 The owner of the flow is a single orchestrator:
 
-- `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
 ## Reading order (recommended)
 
@@ -43,11 +43,11 @@ The owner of the flow is a single orchestrator:
 
 ### Use-case orchestrator (business flow owner)
 
-- `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
 ### Ports (contracts used by the orchestrator)
 
-- Scraper port: `src/modules/news-ingestion/ports/MakoScraperPort.ts`
+- Scraper port: `src/modules/news-ingestion/ports/NewsScraperPort.ts`
 - Hasher port: `src/modules/news-ingestion/ports/NewsItemHasherPort.ts`
 - Repository port: `src/modules/news-ingestion/ports/NewsItemsRepositoryPort.ts`
 
@@ -67,7 +67,7 @@ This exports:
 - Orchestrator(s) / entry functions
 - DTOs
 - Port types (if needed)
-- Module config helper (`MAKO_ENV`, `readMakoConfig`)
+- Module config helper (`INGEST_ENV`, `readIngestionConfig`)
 
 It does **not** export adapters. Adapters are instantiated only in DI.
 
@@ -75,7 +75,7 @@ It does **not** export adapters. Adapters are instantiated only in DI.
 
 Ingestion is triggered by entry-points that are infrastructure-only:
 
-- Cron entry point: `src/app/cron/makoIngestCron.ts`
-- CLI entry point: `src/app/cli/makoIngestCli.ts`
+- Cron entry point: `src/app/cron/newsIngestCron.ts`
+- CLI entry point: `src/app/cli/newsIngestCli.ts`
 - Composition root / DI wiring: `src/app/di/container.ts`
 

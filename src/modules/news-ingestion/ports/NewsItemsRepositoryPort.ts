@@ -30,7 +30,7 @@ export interface NewsItemsRepositoryPort {
  * Note: `scraped_at` is not part of this payload; it is set by the persistence adapter at write time.
  */
 export interface NewNewsItemToStore {
-  readonly source: "mako-channel12";
+  readonly source: string;
   readonly hash: string;
   readonly rawText: string;
   readonly publishedAt: string | null;

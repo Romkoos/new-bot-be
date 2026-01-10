@@ -12,7 +12,7 @@ This document explains:
 ## Where it lives
 
 - Orchestrator normalization:
-  - `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+  - `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 - Hashing port:
   - `src/modules/news-ingestion/ports/NewsItemHasherPort.ts`
 - SHA-256 adapter:
@@ -43,7 +43,7 @@ Scraping and hashing are separated:
 
 Hash input is defined by `NewsItemHashInput`:
 
-- `source: "mako-channel12"`
+- `source: string` (provided by the configured scraper adapter)
 - `rawText: string`
 - `publishedAt: string | null`
 
@@ -51,7 +51,7 @@ The inclusion of `source` prevents accidental collisions if multiple sources are
 
 ## Normalization rules (owned by the orchestrator)
 
-Normalization is performed in `MakoIngestOrch` before calling the hasher:
+Normalization is performed in `NewsIngestOrch` before calling the hasher:
 
 ### `rawText`
 

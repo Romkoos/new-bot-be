@@ -24,7 +24,7 @@ export interface NewsItemHasherPort {
  * - `publishedAt` is an ISO string or `null`
  */
 export interface NewsItemHashInput {
-  readonly source: "mako-channel12";
+  readonly source: string;
   readonly rawText: string;
   readonly publishedAt: string | null;
 }

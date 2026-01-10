@@ -1,4 +1,4 @@
-# Ingestion configuration (MAKO_* env vars, DI consumption)
+# Ingestion configuration (INGEST_* env vars, DI consumption)
 
 ## Purpose / scope
 
@@ -13,13 +13,13 @@ This document defines:
 
 Module-owned config helper:
 
-- `src/modules/news-ingestion/public/makoEnv.ts`
+- `src/modules/news-ingestion/public/ingestionEnv.ts`
 
 Consumption (DI + entry points):
 
 - `src/app/di/container.ts`
-- `src/app/cron/makoIngestCron.ts`
-- `src/app/cli/makoIngestCli.ts`
+- `src/app/cron/newsIngestCron.ts`
+- `src/app/cli/newsIngestCli.ts`
 
 ## Principles
 
@@ -27,8 +27,8 @@ Consumption (DI + entry points):
 
 Env var keys for ingestion are centralized inside the module and exported via the module Public API:
 
-- `MAKO_ENV` (env var key constants)
-- `readMakoConfig(env)` (parsing + defaults)
+- `INGEST_ENV` (env var key constants)
+- `readIngestionConfig(env)` (parsing + defaults)
 
 This ensures `src/app/*` does not hardcode ingestion env var names.
 
@@ -37,24 +37,24 @@ This ensures `src/app/*` does not hardcode ingestion env var names.
 - `PORT` (API server port): used by `src/app/api/server.ts` (not ingestion-specific).
 - `NEWS_BOT_SQLITE_PATH` (DB file path): used by DI to configure the SQLite adapter.
 
-This repo intentionally does **not** store mako-specific variables in `.env` / `.env.local`.
+This repo intentionally does **not** store ingestion variables in `.env` / `.env.local`.
 
 ## Canonical ingestion env vars
 
 All ingestion env keys are in:
 
-- `MAKO_ENV` from `src/modules/news-ingestion/public/makoEnv.ts`
+- `INGEST_ENV` from `src/modules/news-ingestion/public/ingestionEnv.ts`
 
-### `MAKO_CRON_SCHEDULE`
+### `INGEST_CRON_SCHEDULE`
 
-- **Key**: `MAKO_ENV.CRON_SCHEDULE`
-- **Used by**: `src/app/cron/makoIngestCron.ts`
+- **Key**: `INGEST_ENV.CRON_SCHEDULE`
+- **Used by**: `src/app/cron/newsIngestCron.ts`
 - **Default**: `*/5 * * * *`
 - **Meaning**: Cron expression (node-cron syntax) controlling ingestion schedule.
 
-### `MAKO_SCRAPER_HEADLESS`
+### `INGEST_SCRAPER_HEADLESS`
 
-- **Key**: `MAKO_ENV.SCRAPER_HEADLESS`
+- **Key**: `INGEST_ENV.SCRAPER_HEADLESS`
 - **Used by**: DI when creating `PwMakoScraper`
 - **Default**: `true`
 - **Accepted values**:
@@ -64,25 +64,25 @@ All ingestion env keys are in:
   - `true`: run Playwright headless
   - `false`: show browser UI (debugging / bot-protection troubleshooting)
 
-### `MAKO_SCRAPER_SLOWMO_MS`
+### `INGEST_SCRAPER_SLOWMO_MS`
 
-- **Key**: `MAKO_ENV.SCRAPER_SLOWMO_MS`
+- **Key**: `INGEST_ENV.SCRAPER_SLOWMO_MS`
 - **Used by**: DI when creating `PwMakoScraper`
 - **Default**: unset (no slow motion)
 - **Meaning**: Adds a delay (ms) between Playwright actions (useful in headful mode).
 
-### `MAKO_USER_DATA_DIR`
+### `INGEST_USER_DATA_DIR`
 
-- **Key**: `MAKO_ENV.USER_DATA_DIR`
+- **Key**: `INGEST_ENV.USER_DATA_DIR`
 - **Used by**: DI when creating `PwMakoScraper`
 - **Default**: unset
 - **Meaning**:
   - When set, ingestion uses a **persistent browser context**.
   - This persists cookies / localStorage across runs and can help with bot protections.
 
-### `MAKO_CHROMIUM_CHANNEL`
+### `INGEST_CHROMIUM_CHANNEL`
 
-- **Key**: `MAKO_ENV.CHROMIUM_CHANNEL`
+- **Key**: `INGEST_ENV.CHROMIUM_CHANNEL`
 - **Used by**: DI when creating `PwMakoScraper`
 - **Default**: unset (Playwright bundled Chromium)
 - **Allowed values**: `chrome` | `msedge`
@@ -90,30 +90,30 @@ All ingestion env keys are in:
   - Use system-installed Chrome/Edge instead of Playwright’s bundled Chromium.
   - Useful if your environment manages browsers externally.
 
-### `MAKO_USER_AGENT`
+### `INGEST_USER_AGENT`
 
-- **Key**: `MAKO_ENV.USER_AGENT`
+- **Key**: `INGEST_ENV.USER_AGENT`
 - **Default**: unset (adapter has its own default)
 - **Meaning**: Overrides user-agent for Playwright browser context.
 
-### `MAKO_LOCALE`
+### `INGEST_LOCALE`
 
-- **Key**: `MAKO_ENV.LOCALE`
+- **Key**: `INGEST_ENV.LOCALE`
 - **Default**: unset (adapter default: `he-IL`)
 - **Meaning**: Locale used in Playwright context.
 
-### `MAKO_TIMEZONE`
+### `INGEST_TIMEZONE`
 
-- **Key**: `MAKO_ENV.TIMEZONE`
+- **Key**: `INGEST_ENV.TIMEZONE`
 - **Default**: unset (adapter default: `Asia/Jerusalem`)
 - **Meaning**: Timezone used in Playwright context.
 
-## How parsing works (`readMakoConfig`)
+## How parsing works (`readIngestionConfig`)
 
-`readMakoConfig(env)` returns:
+`readIngestionConfig(env)` returns:
 
 - `cronSchedule: string`
-- `scraper: MakoScraperRuntimeConfig`
+- `scraper: IngestScraperRuntimeConfig`
 
 Parsing details:
 
@@ -121,7 +121,7 @@ Parsing details:
 - Boolean parsing supports multiple truthy/falsy strings (see above).
 - Number parsing returns `undefined` if missing/empty/non-finite.
 - Optional strings are included only if non-empty.
-- `MAKO_CHROMIUM_CHANNEL` is validated to `chrome` or `msedge`.
+- `INGEST_CHROMIUM_CHANNEL` is validated to `chrome` or `msedge`.
 
 ## How config reaches adapters (DI)
 
@@ -129,14 +129,14 @@ DI container (`src/app/di/container.ts`) does:
 
 1. Read sqlite path:
    - `NEWS_BOT_SQLITE_PATH ?? "./data/news-bot.sqlite"`
-2. Read mako config:
-   - `const makoCfg = readMakoConfig(process.env)`
+2. Read ingestion config:
+   - `const ingestCfg = readIngestionConfig(process.env)`
 3. Instantiate adapters:
-   - `new PwMakoScraper({ ...makoCfg.scraper })`
+   - `new PwMakoScraper({ ...ingestCfg.scraper })`
    - `new Sha256Hasher()`
    - `new SqliteNewsRepo({ sqlitePath })`
 4. Instantiate orchestrator:
-   - `new MakoIngestOrch({ scraper, hasher, repository, logger })`
+   - `new NewsIngestOrch({ scraper, hasher, repository, logger })`
 
 This keeps env var parsing and defaults centralized, and the system wiring explicit.
 
