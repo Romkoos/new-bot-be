@@ -41,6 +41,38 @@ npm run dev:cron
 
 This logs the health status every minute using the same orchestrator wiring as the API.
 
+## Run (Mako Channel 12 ingestion)
+
+### Manual (CLI)
+
+```bash
+npm run dev:cli:mako
+```
+
+Dry-run (no DB writes):
+
+```bash
+npm run dev:cli:mako:dry-run
+```
+
+### Scheduled (Cron)
+
+```bash
+npm run dev:cron:mako
+```
+
+Configuration:
+- `MAKO_CRON_SCHEDULE` (default: `*/5 * * * *`)
+- `NEWS_BOT_SQLITE_PATH` (default: `./data/news-bot.sqlite`)
+- `MAKO_SCRAPER_HEADLESS` (default: `true`, set to `false` to see the browser UI)
+- `MAKO_SCRAPER_SLOWMO_MS` (optional, e.g. `200` for slower visible steps)
+
+Playwright browser binaries are required (install once):
+
+```bash
+npx playwright install
+```
+
 ## Test
 
 ```bash
@@ -59,4 +91,11 @@ Cron in production build:
 ```bash
 npm run build
 npm run start:cron
+```
+
+Mako ingestion in production build:
+
+```bash
+npm run build
+npm run start:cron:mako
 ```
