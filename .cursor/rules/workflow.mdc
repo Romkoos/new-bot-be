@@ -1,0 +1,110 @@
+---
+alwaysApply: true
+---
+
+# Workflow Rules
+
+## Project Context
+- Framework: Next.js
+- Documentation: 
+   - In the root of the project, in the docs folder.
+
+## Task Execution Workflow
+
+Before implementing ANY task, follow this mandatory workflow:
+
+### Step 0: Branch Preparation
+Before starting ANY task:
+1. Create a **new branch** based on `master`
+2. Ensure `master` is **updated to the latest version**
+3. The task branch MUST be created **from the updated `master`**
+
+---
+
+### Step 1: Research & Context Gathering
+1. Search `docs/` for relevant documentation
+2. Find the relevant documentation in the docs folder at the root of the project
+3. Identify existing patterns, conventions, and related implementations
+4. Note any constraints or requirements from the documentation
+
+---
+
+### Step 2: Create Implementation Plan
+1. Create a plan file in `ai-plans/` folder with the naming convention:
+
+   ```
+   ai-plans/YYYY-MM-DD-<short-task-description>.md
+   ```
+
+2. The plan file MUST include:
+   ```markdown
+   # Task: [Brief Title]
+   
+   ## Context
+   - Ticket/Request: [reference if available]
+   - Related docs: [references found]
+   
+   ## Objective
+   [Clear description of what needs to be accomplished]
+   
+   ## Technical Approach
+   [High-level approach and architecture decisions]
+   
+   ## Implementation Steps
+   - [ ] Step 1: [description]
+   - [ ] Step 2: [description]
+   - [ ] Step 3: [description]
+   ...
+   
+   ## Files to Modify/Create
+   - `path/to/file.ts` - [what changes]
+   - `path/to/new-file.ts` - [purpose]
+   
+   ## Testing Strategy (if needed)
+   - [ ] [Test case 1]
+   - [ ] [Test case 2]
+   
+   ## Rollback Plan
+   [How to revert if needed]
+   
+   ## Open Questions
+   - [Any uncertainties to clarify]
+   ```
+
+3. Present the plan to the user for approval before proceeding
+
+### Step 3: Implementation
+1. Only proceed after user approves the plan
+2. Do only one step on time and wait until user approve till the new step
+3. Update checkboxes in the plan file as you complete each step
+4. Commit messages should reference the plan file
+
+### Step 4: Documentation Update
+After completing EACH task:
+1. Create or update the relevant documentation file(s) in the `docs/` folder
+2. Ensure documentation reflects:
+   - architectural decisions
+   - behavior changes
+   - new flows or constraints
+Documentation updates are mandatory, not optional
+
+### Step 5: Completion
+1. Mark all todos as complete in the plan file
+2. Add a `## Completed` section with:
+   - Date completed
+   - Any deviations from original plan
+   - Follow-up items if any
+3. Create a final commit for the task (use short but informative message)
+4. Push the branch to the remote repository
+
+
+## Documentation
+1. Search for relevant documentation in the docs folder at the root of the project.
+2. Search `docs/` for relevant documentation.
+
+
+## Commands
+
+- Before any feature work: "Let me check docs and create a plan"
+- To view current plan: Reference the latest file in `ai-plans/`
+- To update progress: Edit the checkboxes in the active plan file

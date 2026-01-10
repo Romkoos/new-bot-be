@@ -1,0 +1,26 @@
+{
+  "name": "news-bot-be",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch src/app/api/server.ts",
+    "dev:cron": "tsx watch src/app/cron/healthCron.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/app/api/server.js",
+    "start:cron": "node dist/app/cron/healthCron.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
+
