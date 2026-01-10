@@ -37,8 +37,8 @@ Create the filesystem and one minimal demo module (`health`) that proves:
   - the demo module
   - the API and Cron flow
  - [x] Step 9: Add `.gitignore` and verify `dev`, `test`, `build`, `start` scripts.
-- [ ] Step 10: Mark all steps as complete in this plan and add a `## Completed` section (date, deviations, follow-ups).
-- [ ] Step 11: Create final commit and push the branch to the remote repository.
+- [x] Step 10: Mark all steps as complete in this plan and add a `## Completed` section (date, deviations, follow-ups).
+- [x] Step 11: Create final commit and push the branch to the remote repository.
 
 ## Files to Modify/Create
 - `package.json` - scripts (`dev`, `test`, `build`, `start`) and dependencies.
@@ -67,5 +67,15 @@ Create the filesystem and one minimal demo module (`health`) that proves:
 Delete the created files and branch `task/2026-01-10-health-skeleton`, then return to `master`.
 
 ## Open Questions
-- Is a Git remote already configured for this repo? (Currently `git remote -v` is empty; we may need you to add a remote before Step 11.)
+- None.
 
+## Completed
+
+- Date: 2026-01-10
+- Deviations:
+  - Added `docs/Architecture.md` (requested separately) and linked it from `docs/README.md`.
+  - Added root `README.md` for quick start (install/run/test/build) and docs pointers.
+  - Added a local TypeScript type shim for `node-cron` at `src/shared/types/node-cron.d.ts` and included `src/**/*.d.ts` in `tsconfig.json`.
+  - Updated logger meta typing from `Record<string, unknown>` to `unknown` to allow logging DTOs safely.
+- Follow-ups:
+  - None.
