@@ -1,7 +1,7 @@
 ﻿# Task: Remove legacy Mako env vars (keep only `MAKO_*`)
 
 ## Context
-- Ticket/Request: ג€remove MAKO_ENV_LEGACY usagesג€
+- - Ticket/Request: "remove MAKO_ENV_LEGACY usages"
 - Related docs:
   - `docs/Ingestion.md`
   - Root `README.md`
@@ -40,12 +40,14 @@
 - `ai-plans/*.md` (text updates only)
 
 ## Testing Strategy
-- [ ] `npm run build`
-- [ ] `npm test`
+- [x] `npm run build`
+- [x] `npm test`
 
 ## Rollback Plan
 Revert commits on the task branch.
 
 ## Completed
 - Date completed: 2026-01-10
+
+
 

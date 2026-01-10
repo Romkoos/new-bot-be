@@ -9,7 +9,7 @@
 ## Objective
 Make naming consistent by using:
 - Env vars: `MAKO_*` (e.g. `MAKO_LOCALE`)
-- Log tags from `*:mako-channel12:*` ג†’ `*:mako:*`
+- - Log tags from `*:mako-channel12:*` -> `*:mako:*`
 - Docs/comments accordingly
 
 Preserve runtime behavior. Legacy env names are removed (canonical: `MAKO_*` only).
@@ -40,15 +40,17 @@ Preserve runtime behavior. Legacy env names are removed (canonical: `MAKO_*` onl
 - `.env` / `.env.local` - keep generic vars only (no mako vars)
 
 ## Testing Strategy (if needed)
-- [ ] `npm test`
-- [ ] `npm run dev:cli:mako:dry-run` (sanity)
+- [x] `npm test`
+- [x] `npm run dev:cli:mako:dry-run` (sanity)
 
 ## Rollback Plan
 Revert the commit(s) on the task branch. Since we keep env var fallbacks, rollback is low-risk.
 
 ## Open Questions
-- Should we also rename the persisted `source` value from `"mako-channel12"` ג†’ `"mako"`? (This would require a data migration and careful handling to avoid breaking deduplication.)
+- Should we also rename the persisted `source` value from `"mako-channel12"` ' `"mako"`? (This would require a data migration and careful handling to avoid breaking deduplication.)
 
 ## Completed
 - Date completed: 2026-01-10
+
+
 

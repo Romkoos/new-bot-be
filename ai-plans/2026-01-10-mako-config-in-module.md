@@ -1,7 +1,7 @@
 ﻿# Task: Move Mako env config into `news-ingestion` module (no `.env`/`.env.local` mako vars)
 
 ## Context
-- Ticket/Request: ג€I don't want specific variables in `.env` or `.env.local`. Save the mako variables inside mako ingestion module.ג€
+- - Ticket/Request: "I don't want specific variables in `.env` or `.env.local`. Save the mako variables inside mako ingestion module."
 - Related docs:
   - `docs/Ingestion.md`
   - Root `README.md`
@@ -19,13 +19,13 @@
   - `src/app/di/container.ts` to call the module config helper when constructing `PwMakoScraper`
   - `src/app/cron/makoIngestCron.ts` to read schedule via the module config helper
   - `src/app/cli/makoIngestCli.ts` to set the new `MAKO_*` env vars (not the legacy ones)
-- Delete `.env` and `.env.local` from repo root (they are gitignored, but should not exist locally in this repo state per your request).
+- Remove mako-specific vars from `.env` / `.env.local` and keep only generic runtime vars (`PORT`, `NEWS_BOT_SQLITE_PATH`).
 - Update docs/README to reference the module config (list env vars there) instead of suggesting `.env` content.
 
 ## Implementation Steps
 - [x] Step 1: Create module config helper + export via `modules/news-ingestion/public`.
 - [x] Step 2: Switch DI/cron/CLI to module config helper + new `MAKO_*` keys.
-- [ ] Step 3: Remove repo-root `.env` / `.env.local` files from the workspace.
+- [x] Step 3: Remove mako-specific vars from `.env` / `.env.local` (keep `PORT` and `NEWS_BOT_SQLITE_PATH`).
 - [x] Step 4: Update docs/README references accordingly.
 - [x] Step 5: `npm run build` + `npm test`.
 
@@ -37,11 +37,11 @@
 - `src/app/cli/makoIngestCli.ts` - set new `MAKO_*` env keys
 - `docs/Ingestion.md` - update env var guidance
 - `README.md` - update env var guidance
-- `.env` / `.env.local` - delete
+ - `.env` / `.env.local` - remove mako-specific keys (keep `PORT`, `NEWS_BOT_SQLITE_PATH`)
 
 ## Testing Strategy
-- [ ] `npm run build`
-- [ ] `npm test`
+- [x] `npm run build`
+- [x] `npm test`
 
 ## Rollback Plan
 Revert the commit(s). Since env var fallbacks remain, rollback is safe.
@@ -52,6 +52,8 @@ Revert the commit(s). Since env var fallbacks remain, rollback is safe.
 ## Completed
 - Date completed: 2026-01-10
 - Notes:
-  - Mako env keys/defaults/parsing live in src/modules/news-ingestion/public/makoEnv.ts and are consumed via eadMakoConfig / MAKO_ENV.
+  - Mako env keys/defaults/parsing live in `src/modules/news-ingestion/public/makoEnv.ts` and are consumed via `readMakoConfig` / `MAKO_ENV`.
   - .env/.env.local keep only generic runtime vars (PORT, NEWS_BOT_SQLITE_PATH).
+
+
 

@@ -1,4 +1,4 @@
-﻿# Task: Cron-triggered Mako Channel 12 news ingestion (scrape ג†’ hash ג†’ filter ג†’ store)
+﻿# Task: Cron-triggered Mako Channel 12 news ingestion (scrape ' hash ' filter ' store)
 
 ## Context
 - Ticket/Request: Implement a cron-triggered, idempotent news ingestion flow for `https://www.mako.co.il/news-channel12`.
@@ -21,7 +21,7 @@ Re-running the job must not create duplicates.
 - Add a dedicated module that **owns the use-case**:
   - Module: `src/modules/news-ingestion/`
   - Orchestrator (single place for full flow): `MakoIngestOrch`
-  - Flow: scrape (port) ג†’ hash (hasher port) ג†’ filter (repo port read) ג†’ store (repo port write; skipped in dry-run)
+  - Flow: scrape (port) ' hash (hasher port) ' filter (repo port read) ' store (repo port write; skipped in dry-run)
 
 - Public API rule (must be enforced explicitly):
   - `src/modules/*/public/index.ts` exports **only public contracts**:
@@ -132,11 +132,11 @@ Re-running the job must not create duplicates.
   - Include the Playwright browser binaries requirement and one-time install command: `npx playwright install` (do not auto-run).
 
 ## Testing Strategy (if needed)
-- [ ] Unit tests (Vitest) for orchestrator with mocked ports:
-  - scrape returns N items (including duplicates) -> hashes stable and deterministic
-  - repo returns existing hashes -> filtering correct
-  - dry-run: `insertMany` not called, but "would store" count logged/returned
-- [ ] Manual smoke:
+- [x] Unit tests (Vitest) for orchestrator with mocked ports:
+  - scrape returns N items (including duplicates) ' hashes stable and deterministic
+  - repo returns existing hashes ' filtering correct
+  - dry-run: `insertMany` not called, but would store count logged/returned
+- [x] Manual smoke:
   - run CLI once in dry-run mode, verify logs + no DB file changes
   - run CLI without dry-run twice, verify second run stores 0 new items
 
@@ -146,11 +146,13 @@ Re-running the job must not create duplicates.
 
 ## Open Questions
 - None.
+
 ## Completed
 - Date completed: 2026-01-10
 - Deviations:
   - Item selection uses **first 5 items in DOM order** (per clarified requirement).
-  - Log namespace is **`mako`** (e.g. `ingestion:mako:*`), while the persisted `source` id stays "mako-channel12" for backwards compatibility with existing DB data.
+  - Log namespace is **`mako`** (e.g. `ingestion:mako:*`), while the persisted `source` id stays `"mako-channel12"` for backwards compatibility with existing DB data.
 - Follow-ups:
   - Consider ignoring local DB artifacts in git (e.g. `data/*.sqlite`) if not already ignored.
+
 
