@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+Security
+
+- Use DOMPurify for sanitizing HTML content.
+- Avoid inline scripts and unsanitized HTML injection; rely on trusted
+  templating and component rendering paths.
+- Keep secrets out of client bundles: never embed tokens, private keys,
+  or internal endpoints in client-side code or public configs.
+- Validate and whitelist redirect targets and external URLs to prevent
+  open-redirect or SSRF vectors.
+- Prefer HTTP-only, secure cookies for auth; avoid storing sensitive
+  tokens in localStorage.
