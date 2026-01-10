@@ -1,0 +1,24 @@
+---
+alwaysApply: true
+---
+Error Handling and Validation
+
+Form Validation
+- Implement proper error messages
+- Use proper form libraries (e.g., React Hook Form)
+
+Error Boundaries
+- Use error boundaries to catch and handle errors in React component
+  trees gracefully.
+- Design user-friendly fallback UIs to display when errors occur,
+  keeping users informed without breaking the app.
+
+Additional Practices
+- Classify errors as recoverable vs. fatal; surface actionable,
+  user-friendly messages and avoid exposing raw error data.
+- Log errors to monitoring/observability tooling with enough context
+  (user action, route, payload shape) to debug safely.
+- Add retries with backoff for transient failures and circuit breakers
+  for chatty endpoints that degrade UX when unstable.
+- Fail soft where possible: degrade non-critical features before
+  blocking core user flows.

@@ -1,0 +1,83 @@
+---
+alwaysApply: true
+---
+# Documentation Rules
+
+This project has two distinct documentation surfaces:
+- **Code-level API docs** (TS/JS docstrings, component docs)
+- **System/topic docs** under `docs/` (runtime architecture, flows, and business rules)
+
+Both matter. Code-level docs explain *what an API is*. `docs/` explains *how the system works end-to-end*.
+
+## Code-level API documentation (public APIs)
+- **Document all public** functions, classes, methods, and interfaces.
+- **Use complete sentences** with proper punctuation.
+- **Be concise but specific**: explain purpose + key constraints.
+- **Add examples** when appropriate (especially for tricky usage).
+- **Use proper markdown formatting** in doc comments where supported.
+- **Document side effects**: network calls, storage usage, timers, DOM mutations.
+- **Document feature flags and required env vars** *by name* (but keep full env docs separate; see below).
+
+## Repo docs (`docs/`) — how to document the system
+
+### Source of truth
+- **Code is the source of truth**. `docs/` must match the current implementation.
+- Prefer documenting **runtime behavior** (what happens at request time / render time) over static module lists.
+
+### Preferred structure: topic docs + deep dives
+Avoid “one file per function” explosions. Instead:
+- Keep a small set of **topic entry docs** (overview-level) and link to deep dives.
+- Create **deep-dive folders** only when justified by size/complexity, mirroring real subsystems:
+  - `docs/routing/` (SSR routes, API selection, fetch normalization, error contracts)
+  - `docs/content/` (content composition + HTML rendering pipeline)
+  - `docs/ads/` (ad formats + refresh/viewability rules)
+  - `docs/video/` (player surfaces, creation/autoplay orchestration)
+  - `docs/analytics/` (Domo init/page_view/click/ads/engagement/play)
+  - `docs/native/` (iOS/Android/legacy bridges, talkbacks/gallery)
+  - `docs/sharing/` (share UX, Web Share API, fallbacks, analytics)
+
+### Entry points and navigation
+- Keep `docs/README.md` as the **single table of contents** and recommended reading order.
+- Keep `docs/Overview.md` and `docs/HighLevelArchitecture.md` as **primary entry points**.
+- After any restructure, **update `docs/README.md` first** so it always remains navigable.
+
+### Documentation template (for topic docs and deep dives)
+Each doc should follow a consistent structure:
+- **Purpose / scope**
+- **Where it lives** (key files/entry points)
+- **Step-by-step runtime flow** (with explicit branching rules)
+- **Inputs/outputs** and data contracts (payload fields, flags, return shapes)
+- **Side effects** (network/storage/DOM/timers/event bus)
+- **Edge cases & failure modes**
+- **Extension points** (“where to change this”)
+- **Related docs** (links to deeper/adjacent topics)
+
+### Code excerpt policy (high-signal only)
+- Include **small, high-signal excerpts** that anchor the documented behavior.
+- Prefer excerpts for:
+  - branching decisions
+  - payload mapping/normalization
+  - event names / key constants
+  - lifecycle hooks with side effects
+- Avoid dumping large files or huge inline scripts. If a snippet is large, replace with a short excerpt + file reference.
+
+### Splitting strategy (when docs grow)
+When a doc becomes hard to read (typically ~250–350+ lines), split it into **a small set of cohesive docs** under a topic folder:
+- Keep the entry doc short and link to the deep dives.
+- Do not create nested folder hierarchies unless there is a strong justification.
+
+### Refactors and moves (link hygiene)
+When moving/renaming docs:
+- Update `docs/README.md` reading order paths.
+- **Grep for old paths** and fix all references under `docs/`.
+- Resolve duplicates by choosing a **canonical filename** and removing the older one.
+
+### Environment variables policy
+- Keep detailed environment variable documentation **separate** (do not duplicate per-topic env descriptions).
+- In topic docs, reference env vars **by name** only when needed for comprehension.
+
+## Definition of done (docs changes)
+- Docs reflect current code paths (no stale assumptions).
+- `docs/README.md` reading order is correct.
+- No broken internal links (confirmed via grep for old paths).
+- Deep dives are discoverable via “Deep dives” sections in the topic entry docs.

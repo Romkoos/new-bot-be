@@ -1,0 +1,202 @@
+---
+alwaysApply: true
+---
+
+# Backend Architecture Rules  
+(Modular Monolith + Orchestrators + Hexagonal Architecture)
+
+## Core Principle
+
+**Anything that describes a business flow (use-case) is an ORCHESTRATOR  
+and MUST live inside a module, in `modules/*/application`.**
+
+`app/` NEVER contains business flows.
+
+---
+
+## Responsibility Map
+
+### `src/app/` — Infrastructure / Entry-points ONLY
+
+Purpose:
+- start the system
+- trigger use-cases
+- wire dependencies
+
+Allowed content:
+- REST controllers
+- Cron schedulers
+- DI / composition root
+- config loading
+- logging, retries, guards
+
+Forbidden:
+- business logic
+- flow orchestration
+- calling multiple modules in sequence
+
+```
+src/app/
+├── api/        # HTTP entry-points (controllers, routes)
+├── cron/       # Cron entry-points (schedulers only)
+└── di/         # dependency wiring, adapter selection
+```
+
+Rule:
+- `app/*` may ONLY call orchestrators.
+- `app/*` must NOT decide execution order of modules.
+
+---
+
+### `src/modules/` — Business World
+
+Purpose:
+- contain all business logic
+- define use-cases
+- own orchestration
+
+```
+src/modules/<moduleName>/
+├── public/
+├── application/
+├── domain/
+├── ports/
+├── adapters/
+├── dto/
+└── tests/
+```
+
+---
+
+## Where ORCHESTRATORS live
+
+### `modules/<moduleName>/application/`
+
+This is the ONLY valid place for orchestrators.
+
+An orchestrator:
+- represents ONE use-case
+- controls execution order
+- coordinates multiple steps
+- may call other modules ONLY via their Public API
+
+Examples:
+- `ParseNewsOrchestrator`
+- `HourlyNewsPipelineOrchestrator`
+- `GenerateDailyStatsOrchestrator`
+
+---
+
+## Public API rule
+
+Each module MUST expose a Public API:
+
+```
+modules/<moduleName>/public/index.ts
+```
+
+Allowed exports:
+- orchestrators / application entry functions
+- DTOs
+- port interfaces
+- public domain types
+
+Forbidden:
+- exporting adapters
+- exporting internal services
+- deep imports into module internals
+
+---
+
+## API & Cron interaction rule
+
+### API (`app/api`)
+
+API:
+- parses request
+- validates format
+- calls orchestrator
+- maps result to response
+
+API MUST NOT:
+- call domain services directly
+- call repositories
+- call multiple modules in sequence
+
+### Cron (`app/cron`)
+
+Cron:
+- triggers orchestrator by schedule
+- handles retries/logging
+
+Cron MUST NOT:
+- contain business logic
+- orchestrate steps
+- know module internals
+
+---
+
+## Multi-module flows
+
+### Rule
+
+**The orchestrator lives in the module that OWNS the use-case.**
+
+### Typical case
+
+Flow:
+- parsing → filtering → posting
+
+Owner:
+- `news-parsing` module
+
+Location:
+```
+modules/news-parsing/application/ParseNewsOrchestrator.ts
+```
+
+---
+
+### Rare case
+
+If a flow does NOT clearly belong to one module:
+
+Create a dedicated use-case module.
+
+```
+modules/news-pipeline/
+└── application/
+    └── HourlyPipelineOrchestrator.ts
+```
+
+Use only for true business processes.
+
+---
+
+## Quick “Where does this code go?” checklist
+
+1. Starts the system → `app/`
+2. Business flow / sequence → `modules/*/application`
+3. Business rules → `modules/*/domain`
+4. External interface definition → `modules/*/ports`
+5. Tech implementation → `modules/*/adapters`
+6. Shared helpers → `shared/`
+
+If unsure → it does NOT belong in `app/`.
+
+---
+
+## Explicitly Forbidden
+
+- Orchestrators inside `app/api` or `app/cron`
+- Business logic inside controllers or cron handlers
+- Calling multiple modules from API/Cron
+- God-orchestrators spanning the whole system
+- Importing module internals instead of Public API
+
+---
+
+## Golden Rule
+
+**If the code answers “WHAT happens and in what order” —  
+it MUST be an orchestrator inside `modules/*/application`.**
