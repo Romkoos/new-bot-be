@@ -1,4 +1,4 @@
-# Task: Node.js + TypeScript backend skeleton (Express + node-cron) with modular monolith architecture
+﻿# Task: Node.js + TypeScript backend skeleton (Express + node-cron) with modular monolith architecture
 
 ## Context
 - Ticket/Request: Create a demo backend project skeleton proving strict modular monolith + orchestrators + hexagonal architecture.
@@ -9,7 +9,7 @@ Create the filesystem and one minimal demo module (`health`) that proves:
 - API and Cron are entry-points only (no business logic).
 - Orchestrators live only in `modules/*/application`.
 - Ports & Adapters are inside modules and wired only in the composition root.
-- Cross-module imports are only via each module’s Public API.
+- Cross-module imports are only via each modules Public API.
 
 ## Technical Approach
 - Use **Express** for HTTP entry-point (`GET /health`).
@@ -55,13 +55,13 @@ Create the filesystem and one minimal demo module (`health`) that proves:
 - `src/modules/health/tests/GetHealthStatusOrchestrator.test.ts` - unit test with mocked port.
 - `src/shared/observability/logger.ts` - `info` / `error` wrappers.
 - `docs/README.md` - docs table of contents.
-- `docs/Overview.md` - architecture overview + “how the demo works”.
+- `docs/Overview.md` - architecture overview + how the demo works.
 - `.gitignore` - ignore build output, node_modules, local env files, etc.
 
 ## Testing Strategy (if needed)
-- [ ] Orchestrator unit test: fixed time returned by mocked `TimePort` → deterministic `{ status: "ok", time }` assertion.
-- [ ] Smoke: `npm run dev` then `GET /health` returns expected JSON.
-- [ ] Cron smoke: `npm run start` shows minute log output with the same DTO shape.
+- [x] Orchestrator unit test: fixed time returned by mocked `TimePort` ' deterministic `{ status: "ok", time }` assertion.
+- [x] Smoke: `npm run dev` then `GET /health` returns expected JSON.
+- [x] Cron smoke: `npm run start` shows minute log output with the same DTO shape.
 
 ## Rollback Plan
 Delete the created files and branch `task/2026-01-10-health-skeleton`, then return to `master`.
@@ -79,3 +79,5 @@ Delete the created files and branch `task/2026-01-10-health-skeleton`, then retu
   - Updated logger meta typing from `Record<string, unknown>` to `unknown` to allow logging DTOs safely.
 - Follow-ups:
   - None.
+
+

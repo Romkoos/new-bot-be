@@ -22,13 +22,20 @@ export interface Logger {
 export function createConsoleLogger(): Logger {
   return {
     info(message, meta) {
-      if (meta) console.info(message, meta);
-      else console.info(message);
+      const line = meta ? `${message} ${safeStringify(meta)}` : message;
+      process.stdout.write(`${line}\n`);
     },
     error(message, meta) {
-      if (meta) console.error(message, meta);
-      else console.error(message);
+      const line = meta ? `${message} ${safeStringify(meta)}` : message;
+      process.stderr.write(`${line}\n`);
     },
   };
 }
 
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "[unserializable]";
+  }
+}
