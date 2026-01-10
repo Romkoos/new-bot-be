@@ -2,7 +2,7 @@
 
 ## Purpose / scope
 
-The `news-ingestion` module owns the ingestion use-case for Mako news:
+The `news-ingestion` module owns a **site-agnostic** news ingestion use-case:
 
 - scrape the target page (browser automation)
 - normalize content
@@ -25,12 +25,12 @@ It is designed to be:
 
 The module owns a single primary use-case orchestrator:
 
-- `MakoIngestOrch`
+- `NewsIngestOrch`
 
-It also owns the configuration contract for Mako ingestion via:
+It also owns the ingestion runtime configuration contract via:
 
-- `MAKO_ENV`
-- `readMakoConfig(env)`
+- `INGEST_ENV`
+- `readIngestionConfig(env)`
 
 ## Public API (`src/modules/news-ingestion/public/index.ts`)
 
@@ -43,32 +43,32 @@ This is the only allowed import surface for:
 Exports (contracts only):
 
 - Orchestrator:
-  - `MakoIngestOrch`
+  - `NewsIngestOrch`
 - DTOs:
-  - `MakoIngestResult`
-  - `MakoScrapedItem`
+  - `NewsIngestResult`
+  - `ScrapedNewsItem`
 - Ports:
-  - `MakoScraperPort`
+  - `NewsScraperPort`
   - `NewsItemHasherPort`, `NewsItemHashInput`
   - `NewsItemsRepositoryPort`, `NewNewsItemToStore`, `InsertManyResult`
 - Config helper:
-  - `MAKO_ENV`
-  - `readMakoConfig`
-  - `MakoRuntimeConfig`, `MakoScraperRuntimeConfig`
+  - `INGEST_ENV`
+  - `readIngestionConfig`
+  - `IngestRuntimeConfig`, `IngestScraperRuntimeConfig`
 
 Adapters are intentionally not exported. They are instantiated in DI.
 
-## Orchestrator: `MakoIngestOrch`
+## Orchestrator: `NewsIngestOrch`
 
 File:
 
-- `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
 ### Responsibility (flow owner)
 
 This orchestrator owns the full use-case ordering:
 
-1. Scrape (`MakoScraperPort.scrapeFirstFive`)
+1. Scrape (`NewsScraperPort.scrapeFirstFive`)
 2. Normalize for hash stability
 3. Hash (`NewsItemHasherPort.hashNormalized`)
 4. Filter (`NewsItemsRepositoryPort.findExistingHashes`)
@@ -80,9 +80,9 @@ This orchestrator owns the full use-case ordering:
 
 ### Output contract
 
-Returns `MakoIngestResult`:
+Returns `NewsIngestResult`:
 
-- `source: "mako-channel12"`
+- `source: string` (provided by the configured scraper adapter)
 - `dryRun`
 - `scrapedCount`
 - `newItemsCount`
@@ -108,25 +108,25 @@ Two layers:
 
 Orchestrator emits:
 
-- `ingestion:mako:start`
-- `ingestion:mako:scraped`
-- `ingestion:mako:filtered`
-- `ingestion:mako:early-exit:no-new-items`
-- `ingestion:mako:done`
+- `ingestion:news:start`
+- `ingestion:news:scraped`
+- `ingestion:news:filtered` (includes `{ source }`)
+- `ingestion:news:early-exit:no-new-items` (includes `{ source }`)
+- `ingestion:news:done` (includes `{ source }`)
 
 For log semantics, see `docs/ingestion/Observability.md`.
 
 ## Ports (hexagonal contracts)
 
-### `MakoScraperPort`
+### `NewsScraperPort`
 
 File:
 
-- `src/modules/news-ingestion/ports/MakoScraperPort.ts`
+- `src/modules/news-ingestion/ports/NewsScraperPort.ts`
 
 Contract:
 
-- `scrapeFirstFive(): Promise<ReadonlyArray<MakoScrapedItem>>`
+- `scrapeFirstFive(): Promise<ReadonlyArray<ScrapedNewsItem>>`
 
 Constraints:
 
@@ -146,7 +146,7 @@ Contract:
 
 `NewsItemHashInput` is canonical input (already normalized):
 
-- `source: "mako-channel12"`
+- `source: string` (provided by the configured scraper adapter)
 - `rawText: string`
 - `publishedAt: string | null`
 
@@ -177,7 +177,6 @@ File:
 
 Highlights:
 
-- Navigates to `https://www.mako.co.il/news-channel12`
 - Strictly clicks `.mc-drawer__btn` across frames
 - Waits for `.desktop-drawer-news`
 - Extracts **first 5** items from DOM order using a single `evaluateAll` for performance
@@ -224,12 +223,12 @@ Deep dive:
 
 File:
 
-- `src/modules/news-ingestion/public/makoEnv.ts`
+- `src/modules/news-ingestion/public/ingestionEnv.ts`
 
 Exports:
 
-- `MAKO_ENV` (env var key constants)
-- `readMakoConfig(env)` (parsing + defaults)
+- `INGEST_ENV` (env var key constants)
+- `readIngestionConfig(env)` (parsing + defaults)
 
 Deep dive:
 
@@ -245,43 +244,43 @@ File:
 
 Wiring:
 
-- read config: `readMakoConfig(process.env)`
+- read config: `readIngestionConfig(process.env)`
 - instantiate adapters (`PwMakoScraper`, `Sha256Hasher`, `SqliteNewsRepo`)
-- instantiate orchestrator (`MakoIngestOrch`)
-- expose as: `container.ingest.mako`
+- instantiate orchestrator (`NewsIngestOrch`)
+- expose as: `container.ingest.news`
 
 ### Cron entry point
 
 File:
 
-- `src/app/cron/makoIngestCron.ts`
+- `src/app/cron/newsIngestCron.ts`
 
 Behavior:
 
-- reads schedule from `readMakoConfig(process.env).cronSchedule`
+- reads schedule from `readIngestionConfig(process.env).cronSchedule`
 - schedules repeated runs
 - calls orchestrator with `dryRun: false`
-- logs `cron:mako:*`
+- logs `cron:news:*`
 
 ### CLI entry point
 
 File:
 
-- `src/app/cli/makoIngestCli.ts`
+- `src/app/cli/newsIngestCli.ts`
 
 Behavior:
 
 - supports `--dry-run`
-- supports `--headful/--headed` (sets `MAKO_SCRAPER_HEADLESS=false`)
+- supports `--headful/--headed` (sets `INGEST_SCRAPER_HEADLESS=false`)
 - supports `--slowmo-ms=...`
 - calls orchestrator once and exits explicitly
-- logs `cli:mako:*`
+- logs `cli:news:*`
 
 ## Tests
 
 File:
 
-- `src/modules/news-ingestion/tests/MakoIngestOrch.test.ts`
+- `src/modules/news-ingestion/tests/NewsIngestOrch.test.ts`
 
 What is unit-tested:
 

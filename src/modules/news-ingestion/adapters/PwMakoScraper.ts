@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Frame, Page } from "playwright";
-import type { MakoScrapedItem } from "../dto/MakoScrapedItem";
-import type { MakoScraperPort } from "../ports/MakoScraperPort";
+import type { ScrapedNewsItem } from "../dto/ScrapedNewsItem";
+import type { NewsScraperPort } from "../ports/NewsScraperPort";
 
 const URL = "https://www.mako.co.il/news-channel12";
 const SEL_DRAWER_BTN = ".mc-drawer__btn";
@@ -69,7 +69,9 @@ export interface PwMakoScraperOpts {
  * - Returns normalized data only (no hashing).
  * - Does not access persistence.
  */
-export class PwMakoScraper implements MakoScraperPort {
+export class PwMakoScraper implements NewsScraperPort {
+  public readonly source = "mako-channel12";
+
   private readonly options: {
     readonly headless: boolean;
     readonly slowMoMs?: number;
@@ -92,7 +94,7 @@ export class PwMakoScraper implements MakoScraperPort {
     };
   }
 
-  public async scrapeFirstFive(): Promise<ReadonlyArray<MakoScrapedItem>> {
+  public async scrapeFirstFive(): Promise<ReadonlyArray<ScrapedNewsItem>> {
     const { ctx, close } = await createCtx(this.options);
     const page = await ctx.newPage();
 
@@ -137,7 +139,7 @@ async function clickDrawer(frames: ReadonlyArray<Frame>): Promise<void> {
   await locator.click({ timeout: T_CLICK_MS });
 }
 
-async function extractTop5(page: Page): Promise<MakoScrapedItem[]> {
+async function extractTop5(page: Page): Promise<ScrapedNewsItem[]> {
   const loc = page.locator(SEL_NEWS_ITEM);
   const extracted = (await loc.evaluateAll(
     (nodes: Element[], timeSel: string) => {

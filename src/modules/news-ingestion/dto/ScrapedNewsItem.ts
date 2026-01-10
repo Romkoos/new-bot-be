@@ -1,12 +1,12 @@
 /**
- * Normalized news item scraped from the Mako Channel 12 page.
+ * Normalized news item scraped from a concrete source site.
  *
  * Scraping rules:
  * - Scraping returns normalized data only.
  * - Scraping must not generate hashes.
  * - Scraping must not access persistence.
  */
-export interface MakoScrapedItem {
+export interface ScrapedNewsItem {
   /**
    * The main teaser/text content extracted from the DOM.
    *
@@ -16,8 +16,6 @@ export interface MakoScrapedItem {
 
   /**
    * Optional publish time, represented as an ISO string, or `null` when unavailable.
-   *
-   * Source DOM provides `"HH:mm"`; the scraper converts it to ISO using today's date.
    */
   readonly publishedAt: string | null;
 }

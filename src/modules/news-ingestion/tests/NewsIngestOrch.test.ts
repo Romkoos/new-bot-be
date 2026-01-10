@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { MakoIngestOrch } from "../application/MakoIngestOrch";
-import type { MakoScrapedItem } from "../dto/MakoScrapedItem";
-import type { MakoScraperPort } from "../ports/MakoScraperPort";
+import { NewsIngestOrch } from "../application/NewsIngestOrch";
+import type { ScrapedNewsItem } from "../dto/ScrapedNewsItem";
+import type { NewsScraperPort } from "../ports/NewsScraperPort";
 import type { NewsItemHasherPort, NewsItemHashInput } from "../ports/NewsItemHasherPort";
 import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
 import type { Logger } from "../../../shared/observability/logger";
@@ -13,15 +13,16 @@ function createTestLogger(): Logger & { readonly info: ReturnType<typeof vi.fn>;
   };
 }
 
-describe("MakoIngestOrch", () => {
+describe("NewsIngestOrch", () => {
   it("normalizes input before hashing (trim + collapse whitespace + publishedAt ISO-or-null)", async () => {
-    const scraped: MakoScrapedItem[] = [
+    const scraped: ScrapedNewsItem[] = [
       { text: "  Hello   world \n", publishedAt: "2026-01-10T10:11:00.000Z" },
       { text: "\t", publishedAt: "invalid" }, // should be dropped due to empty normalized text
       { text: "  Another\titem ", publishedAt: null },
     ];
 
-    const scraper: MakoScraperPort = {
+    const scraper: NewsScraperPort = {
+      source: "test-source",
       scrapeFirstFive: vi.fn(async () => scraped),
     };
 
@@ -40,22 +41,23 @@ describe("MakoIngestOrch", () => {
 
     const logger = createTestLogger();
 
-    const orchestrator = new MakoIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
     await orchestrator.run({ dryRun: true });
 
     expect(seenHashInputs).toEqual([
-      { source: "mako-channel12", rawText: "Hello world", publishedAt: "2026-01-10T10:11:00.000Z" },
-      { source: "mako-channel12", rawText: "Another item", publishedAt: null },
+      { source: "test-source", rawText: "Hello world", publishedAt: "2026-01-10T10:11:00.000Z" },
+      { source: "test-source", rawText: "Another item", publishedAt: null },
     ]);
   });
 
   it("filters out existing hashes and early-exits when there are no new items", async () => {
-    const scraped: MakoScrapedItem[] = [
+    const scraped: ScrapedNewsItem[] = [
       { text: "A", publishedAt: null },
       { text: "B", publishedAt: null },
     ];
 
-    const scraper: MakoScraperPort = {
+    const scraper: NewsScraperPort = {
+      source: "test-source",
       scrapeFirstFive: vi.fn(async () => scraped),
     };
 
@@ -70,27 +72,29 @@ describe("MakoIngestOrch", () => {
 
     const logger = createTestLogger();
 
-    const orchestrator = new MakoIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
     const result = await orchestrator.run({ dryRun: false });
 
     expect(result.scrapedCount).toBe(2);
     expect(result.newItemsCount).toBe(0);
     expect(result.storedCount).toBe(0);
+    expect(result.source).toBe("test-source");
 
     expect(repository.insertMany).not.toHaveBeenCalled();
     expect(logger.info).toHaveBeenCalledWith(
-      "ingestion:mako:early-exit:no-new-items",
-      expect.objectContaining({ durationMs: expect.any(Number) }),
+      "ingestion:news:early-exit:no-new-items",
+      expect.objectContaining({ source: "test-source", durationMs: expect.any(Number) }),
     );
   });
 
   it("does not write to persistence in dry-run mode, but still reports correct counts", async () => {
-    const scraped: MakoScrapedItem[] = [
+    const scraped: ScrapedNewsItem[] = [
       { text: "X", publishedAt: null },
       { text: "Y", publishedAt: null },
     ];
 
-    const scraper: MakoScraperPort = {
+    const scraper: NewsScraperPort = {
+      source: "test-source",
       scrapeFirstFive: vi.fn(async () => scraped),
     };
 
@@ -105,16 +109,18 @@ describe("MakoIngestOrch", () => {
 
     const logger = createTestLogger();
 
-    const orchestrator = new MakoIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
     const result = await orchestrator.run({ dryRun: true });
 
     expect(result.newItemsCount).toBe(1);
     expect(result.storedCount).toBe(0);
+    expect(result.source).toBe("test-source");
     expect(repository.insertMany).not.toHaveBeenCalled();
 
     expect(logger.info).toHaveBeenCalledWith(
-      "ingestion:mako:done",
+      "ingestion:news:done",
       expect.objectContaining({
+        source: "test-source",
         dryRun: true,
         scrapedCount: 2,
         newItemsCount: 1,

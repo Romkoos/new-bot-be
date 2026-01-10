@@ -51,11 +51,7 @@ Even though `hash` is unique, `source` is stored to:
 - simplify querying by source
 - preserve provenance
 
-Currently, the ingestion flow stores:
-
-- `source = "mako-channel12"`
-
-This is intentionally stable to preserve existing DB data.
+The ingestion flow stores `source` for every row. The value is provided by the configured scraper adapter and is intentionally stable for that adapter to preserve DB continuity.
 
 ### Why store `payload_json`
 

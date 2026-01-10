@@ -11,9 +11,9 @@ This document explains the **exact runtime flow** owned by the ingestion orchest
 
 ## Where it lives
 
-- Orchestrator: `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- Orchestrator: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 - Ports used by orchestrator:
-  - `src/modules/news-ingestion/ports/MakoScraperPort.ts`
+  - `src/modules/news-ingestion/ports/NewsScraperPort.ts`
   - `src/modules/news-ingestion/ports/NewsItemHasherPort.ts`
   - `src/modules/news-ingestion/ports/NewsItemsRepositoryPort.ts`
 
@@ -49,7 +49,7 @@ The orchestrator implements this exact sequence:
 
 It captures wall-clock start time and logs:
 
-- `ingestion:mako:start` with `{ dryRun }`
+- `ingestion:news:start` with `{ dryRun }`
 
 ### 1) Scrape (via scraper port)
 
@@ -65,7 +65,7 @@ Constraints:
 
 On success, orchestrator logs:
 
-- `ingestion:mako:scraped` with `{ count }`
+- `ingestion:news:scraped` with `{ count }`
 
 ### 2) Normalize for hash stability (in orchestrator)
 
@@ -94,11 +94,9 @@ The orchestrator does **not** own the hashing algorithm; it only ensures the inp
 
 Hash input includes:
 
-- `source` (constant string literal): `"mako-channel12"`
+- `source` (string provided by the configured scraper adapter)
 - normalized `rawText`
 - normalized `publishedAt` (ISO or null)
-
-Note: the **log namespace** is `mako`, but the **persisted source id** remains `"mako-channel12"` to keep storage continuity and avoid changing existing DB rows/hashes.
 
 ### 4) Filter by existing hashes (via repository port)
 
@@ -112,7 +110,8 @@ Then it filters out duplicates in-memory:
 
 It logs:
 
-- `ingestion:mako:filtered` with:
+- `ingestion:news:filtered` with:
+  - `source`
   - `existingCount`
   - `filteredOutCount`
   - `newItemsCount`
@@ -121,8 +120,8 @@ It logs:
 
 If `newItemsCount === 0`:
 
-- It logs: `ingestion:mako:early-exit:no-new-items` with `{ durationMs }`
-- Returns `MakoIngestResult` with:
+- It logs: `ingestion:news:early-exit:no-new-items` with `{ source, durationMs }`
+- Returns `NewsIngestResult` with:
   - `newItemsCount: 0`
   - `storedCount: 0`
 
@@ -132,7 +131,7 @@ This is a **successful** outcome. “Nothing to do” is not an error.
 
 The orchestrator converts each new item to `NewNewsItemToStore`:
 
-- `source: "mako-channel12"`
+- `source: string` (provided by the configured scraper adapter)
 - `hash`
 - `rawText`
 - `publishedAt`
@@ -154,14 +153,15 @@ If not dry-run:
 
 It logs a single summary line:
 
-- `ingestion:mako:done` with:
+- `ingestion:news:done` with:
+  - `source`
   - `dryRun`
   - `scrapedCount`
   - `newItemsCount`
   - `storedCount`
   - `durationMs`
 
-It returns the same values as `MakoIngestResult`.
+It returns the same values as `NewsIngestResult`.
 
 ## Idempotency model (why duplicates are not created)
 

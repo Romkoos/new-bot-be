@@ -1,26 +1,23 @@
 /**
- * Mako ingestion runtime configuration (env vars).
+ * News ingestion runtime configuration (env vars).
  *
  * Purpose:
- * - Centralize env var keys + defaults for the Mako ingestion flow.
+ * - Centralize env var keys + defaults for ingestion execution.
  * - Keep `src/app/*` free from hardcoded env var names (thin entry-points + DI).
- *
- * Compatibility:
- * - Preferred keys: `MAKO_*`
  */
 
-export const MAKO_ENV = {
-  CRON_SCHEDULE: "MAKO_CRON_SCHEDULE",
-  SCRAPER_HEADLESS: "MAKO_SCRAPER_HEADLESS",
-  SCRAPER_SLOWMO_MS: "MAKO_SCRAPER_SLOWMO_MS",
-  USER_DATA_DIR: "MAKO_USER_DATA_DIR",
-  CHROMIUM_CHANNEL: "MAKO_CHROMIUM_CHANNEL",
-  USER_AGENT: "MAKO_USER_AGENT",
-  LOCALE: "MAKO_LOCALE",
-  TIMEZONE: "MAKO_TIMEZONE",
+export const INGEST_ENV = {
+  CRON_SCHEDULE: "INGEST_CRON_SCHEDULE",
+  SCRAPER_HEADLESS: "INGEST_SCRAPER_HEADLESS",
+  SCRAPER_SLOWMO_MS: "INGEST_SCRAPER_SLOWMO_MS",
+  USER_DATA_DIR: "INGEST_USER_DATA_DIR",
+  CHROMIUM_CHANNEL: "INGEST_CHROMIUM_CHANNEL",
+  USER_AGENT: "INGEST_USER_AGENT",
+  LOCALE: "INGEST_LOCALE",
+  TIMEZONE: "INGEST_TIMEZONE",
 } as const;
 
-export interface MakoScraperRuntimeConfig {
+export interface IngestScraperRuntimeConfig {
   readonly headless: boolean;
   readonly slowMoMs?: number;
   readonly userDataDir?: string;
@@ -30,29 +27,29 @@ export interface MakoScraperRuntimeConfig {
   readonly timezoneId?: string;
 }
 
-export interface MakoRuntimeConfig {
+export interface IngestRuntimeConfig {
   readonly cronSchedule: string;
-  readonly scraper: MakoScraperRuntimeConfig;
+  readonly scraper: IngestScraperRuntimeConfig;
 }
 
 /**
- * Reads Mako ingestion config from the given environment.
+ * Reads ingestion runtime config from the given environment.
  */
-export function readMakoConfig(env: NodeJS.ProcessEnv): MakoRuntimeConfig {
-  const cronSchedule = env[MAKO_ENV.CRON_SCHEDULE] ?? "*/5 * * * *";
+export function readIngestionConfig(env: NodeJS.ProcessEnv): IngestRuntimeConfig {
+  const cronSchedule = env[INGEST_ENV.CRON_SCHEDULE] ?? "*/5 * * * *";
 
-  const headless = parseBooleanEnv(env[MAKO_ENV.SCRAPER_HEADLESS], true);
+  const headless = parseBooleanEnv(env[INGEST_ENV.SCRAPER_HEADLESS], true);
 
-  const slowMoMs = parseNumberEnv(env[MAKO_ENV.SCRAPER_SLOWMO_MS]);
-  const userDataDir = env[MAKO_ENV.USER_DATA_DIR];
+  const slowMoMs = parseNumberEnv(env[INGEST_ENV.SCRAPER_SLOWMO_MS]);
+  const userDataDir = env[INGEST_ENV.USER_DATA_DIR];
 
-  const chromiumChannelRaw = env[MAKO_ENV.CHROMIUM_CHANNEL];
+  const chromiumChannelRaw = env[INGEST_ENV.CHROMIUM_CHANNEL];
   const chromiumChannel: "chrome" | "msedge" | undefined =
     chromiumChannelRaw === "chrome" || chromiumChannelRaw === "msedge" ? chromiumChannelRaw : undefined;
 
-  const userAgent = env[MAKO_ENV.USER_AGENT];
-  const locale = env[MAKO_ENV.LOCALE];
-  const timezoneId = env[MAKO_ENV.TIMEZONE];
+  const userAgent = env[INGEST_ENV.USER_AGENT];
+  const locale = env[INGEST_ENV.LOCALE];
+  const timezoneId = env[INGEST_ENV.TIMEZONE];
 
   return {
     cronSchedule,

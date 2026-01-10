@@ -6,14 +6,14 @@
   "scripts": {
     "dev": "tsx watch src/app/api/server.ts",
     "dev:cron": "tsx watch src/app/cron/healthCron.ts",
-    "dev:cron:mako": "tsx watch src/app/cron/makoIngestCron.ts",
-    "dev:cli:mako": "tsx src/app/cli/makoIngestCli.ts",
-    "dev:cli:mako:dry-run": "tsx src/app/cli/makoIngestCli.ts --dry-run",
+    "dev:cron:ingest": "tsx watch src/app/cron/newsIngestCron.ts",
+    "dev:cli:ingest": "tsx src/app/cli/newsIngestCli.ts",
+    "dev:cli:ingest:dry-run": "tsx src/app/cli/newsIngestCli.ts --dry-run",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/app/api/server.js",
     "start:cron": "node dist/app/cron/healthCron.js",
-    "start:cron:mako": "node dist/app/cron/makoIngestCron.js",
-    "start:cli:mako": "node dist/app/cli/makoIngestCli.js",
+    "start:cron:ingest": "node dist/app/cron/newsIngestCron.js",
+    "start:cli:ingest": "node dist/app/cli/newsIngestCli.js",
     "test": "vitest run"
   },
   "dependencies": {

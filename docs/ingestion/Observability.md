@@ -10,10 +10,10 @@ This document explains:
 
 ## Where it lives
 
-- Orchestrator logs: `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- Orchestrator logs: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 - Entry-point logs:
-  - `src/app/cron/makoIngestCron.ts`
-  - `src/app/cli/makoIngestCli.ts`
+  - `src/app/cron/newsIngestCron.ts`
+  - `src/app/cli/newsIngestCli.ts`
 - Logger implementation: `src/shared/observability/logger.ts`
 
 ## Logger model
@@ -30,28 +30,23 @@ The repo uses a minimal `Logger` abstraction:
 We use a consistent namespace scheme:
 
 - Use-case logs (orchestrator):
-  - `ingestion:mako:*`
+  - `ingestion:news:*`
 - Cron entry point logs:
-  - `cron:mako:*`
+  - `cron:news:*`
 - CLI entry point logs:
-  - `cli:mako:*`
+  - `cli:news:*`
 
-Important:
+## Orchestrator log events (`ingestion:news:*`)
 
-- The **log namespace** is `mako`.
-- The persisted `source` id in DB and DTOs remains `"mako-channel12"`.
+### `ingestion:news:start`
 
-## Orchestrator log events (`ingestion:mako:*`)
-
-### `ingestion:mako:start`
-
-Emitted at the start of `MakoIngestOrch.run(...)`.
+Emitted at the start of `NewsIngestOrch.run(...)`.
 
 Meta:
 
 - `{ dryRun: boolean }`
 
-### `ingestion:mako:scraped`
+### `ingestion:news:scraped`
 
 Emitted after scraper returns.
 
@@ -59,41 +54,43 @@ Meta:
 
 - `{ count: number }` (number of scraped items returned by scraper)
 
-### `ingestion:mako:filtered`
+### `ingestion:news:filtered`
 
 Emitted after hashing and filtering against existing hashes.
 
 Meta:
 
+- `source: string` (provided by the configured scraper adapter)
 - `existingCount: number` (how many of the candidate hashes already existed in storage)
 - `filteredOutCount: number` (how many were removed as duplicates)
 - `newItemsCount: number` (how many remain to store)
 
-### `ingestion:mako:early-exit:no-new-items`
+### `ingestion:news:early-exit:no-new-items`
 
 Emitted when `newItemsCount === 0`.
 
 Meta:
 
-- `{ durationMs: number }`
+- `{ source: string, durationMs: number }`
 
 This is a **successful** run outcome.
 
-### `ingestion:mako:done`
+### `ingestion:news:done`
 
 Emitted at the end of the use-case (both dry-run and persisted runs).
 
 Meta:
 
+- `source: string`
 - `dryRun: boolean`
 - `scrapedCount: number`
 - `newItemsCount: number`
 - `storedCount: number`
 - `durationMs: number`
 
-## Cron log events (`cron:mako:*`)
+## Cron log events (`cron:news:*`)
 
-### `Cron scheduler started (mako ingestion).`
+### `Cron scheduler started (news ingestion).`
 
 Emitted once on cron process startup.
 
@@ -101,7 +98,7 @@ Meta:
 
 - `{ schedule: string }`
 
-### `cron:mako:ingestion:start`
+### `cron:news:ingestion:start`
 
 Emitted for each scheduled tick before orchestrator run.
 
@@ -109,20 +106,20 @@ Meta:
 
 - `{ schedule: string }`
 
-### `cron:mako:ingestion:done`
+### `cron:news:ingestion:done`
 
 Emitted for each tick after orchestrator run.
 
 Meta:
 
 - `durationMs: number`
-- `source: "mako-channel12"`
+- `source: string`
 - `dryRun: false`
 - `scrapedCount: number`
 - `newItemsCount: number`
 - `storedCount: number`
 
-### `cron:mako:ingestion:error`
+### `cron:news:ingestion:error`
 
 Emitted on any exception thrown from orchestrator.
 
@@ -131,9 +128,9 @@ Meta:
 - `durationMs: number`
 - `error: unknown` (whatever was thrown)
 
-## CLI log events (`cli:mako:*`)
+## CLI log events (`cli:news:*`)
 
-### `cli:mako:ingestion:start`
+### `cli:news:ingestion:start`
 
 Emitted once at start of CLI run.
 
@@ -141,20 +138,20 @@ Meta:
 
 - `{ dryRun: boolean }`
 
-### `cli:mako:ingestion:done`
+### `cli:news:ingestion:done`
 
 Emitted once at end of CLI run.
 
 Meta:
 
 - `durationMs: number`
-- `source: "mako-channel12"`
+- `source: string`
 - `dryRun: boolean`
 - `scrapedCount: number`
 - `newItemsCount: number`
 - `storedCount: number`
 
-### `cli:mako:ingestion:error`
+### `cli:news:ingestion:error`
 
 Emitted on error; then CLI exits with code `1`.
 
@@ -169,7 +166,7 @@ Meta:
 
 Look for:
 
-- `ingestion:mako:scraped { count: 5 }`
+- `ingestion:news:scraped { count: 5 }`
 
 If `count` is 0 or missing, inspect failures in:
 
@@ -187,19 +184,19 @@ Run ingestion twice (non-dry-run):
 
 2nd run: expect either
 
-- `ingestion:mako:early-exit:no-new-items`
+- `ingestion:news:early-exit:no-new-items`
 
 or
 
-- `ingestion:mako:done` with `newItemsCount: 0`, `storedCount: 0`
+- `ingestion:news:done` with `newItemsCount: 0`, `storedCount: 0`
 
 ### Validate persistence
 
 Look for `storedCount` in:
 
-- `ingestion:mako:done`
-- `cli:mako:ingestion:done`
-- `cron:mako:ingestion:done`
+- `ingestion:news:done`
+- `cli:news:ingestion:done`
+- `cron:news:ingestion:done`
 
 If `newItemsCount > 0` but `storedCount === 0`:
 

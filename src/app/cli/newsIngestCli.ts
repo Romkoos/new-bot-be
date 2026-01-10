@@ -1,8 +1,8 @@
 import { buildContainer } from "../di/container";
-import { MAKO_ENV } from "../../modules/news-ingestion/public";
+import { INGEST_ENV } from "../../modules/news-ingestion/public";
 
 /**
- * CLI entry-point for manually triggering the Mako Channel 12 ingestion use-case.
+ * CLI entry-point for manually triggering the news ingestion use-case.
  *
  * Responsibilities:
  * - Parse CLI flags.
@@ -20,25 +20,27 @@ async function main(): Promise<void> {
   const slowMoMs = readNumericArgValue("--slowmo-ms");
 
   // Allow CLI to control scraper visibility without requiring users to set env vars in their shell.
-  if (headful) process.env[MAKO_ENV.SCRAPER_HEADLESS] = "false";
-  if (slowMoMs !== undefined) process.env[MAKO_ENV.SCRAPER_SLOWMO_MS] = String(slowMoMs);
+  if (headful) process.env[INGEST_ENV.SCRAPER_HEADLESS] = "false";
+  if (slowMoMs !== undefined) process.env[INGEST_ENV.SCRAPER_SLOWMO_MS] = String(slowMoMs);
 
   const container = buildContainer();
 
   if (args.has("--help") || args.has("-h")) {
     // Keep output minimal and stable for scripting.
-    process.stdout.write("Usage: tsx src/app/cli/makoIngestCli.ts [--dry-run] [--headful|--headed] [--slowmo-ms=200]\n");
+    process.stdout.write(
+      "Usage: tsx src/app/cli/newsIngestCli.ts [--dry-run] [--headful|--headed] [--slowmo-ms=200]\n",
+    );
     return;
   }
 
   const startedAt = Date.now();
-  container.logger.info("cli:mako:ingestion:start", { dryRun });
+  container.logger.info("cli:news:ingestion:start", { dryRun });
 
   try {
-    const result = await container.ingest.mako.run({ dryRun });
+    const result = await container.ingest.news.run({ dryRun });
     const durationMs = Date.now() - startedAt;
 
-    container.logger.info("cli:mako:ingestion:done", {
+    container.logger.info("cli:news:ingestion:done", {
       durationMs,
       source: result.source,
       dryRun: result.dryRun,
@@ -50,7 +52,7 @@ async function main(): Promise<void> {
     process.exit(0);
   } catch (error) {
     const durationMs = Date.now() - startedAt;
-    container.logger.error("cli:mako:ingestion:error", { durationMs, error });
+    container.logger.error("cli:news:ingestion:error", { durationMs, error });
     process.exit(1);
   }
 }

@@ -14,10 +14,10 @@ It focuses on lifecycle and responsibilities:
 
 ## Where it lives
 
-- Cron entry point: `src/app/cron/makoIngestCron.ts`
-- CLI entry point: `src/app/cli/makoIngestCli.ts`
+- Cron entry point: `src/app/cron/newsIngestCron.ts`
+- CLI entry point: `src/app/cli/newsIngestCli.ts`
 - DI container: `src/app/di/container.ts`
-- Orchestrator: `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- Orchestrator: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
 ## Entry-point boundary rules (must hold)
 
@@ -35,7 +35,7 @@ Entry points must **not**:
 - query or write SQLite directly
 - coordinate multiple steps or multiple modules in sequence
 
-## Cron: `makoIngestCron.ts`
+## Cron: `newsIngestCron.ts`
 
 ### Purpose
 
@@ -45,7 +45,7 @@ Run ingestion repeatedly on a schedule.
 
 Cron reads schedule from the module config:
 
-- `readMakoConfig(process.env).cronSchedule`
+- `readIngestionConfig(process.env).cronSchedule`
 
 Default value is set in the module config helper:
 
@@ -63,11 +63,11 @@ Default value is set in the module config helper:
 
 It emits:
 
-- `Cron scheduler started (mako ingestion).` with `{ schedule }` once on startup
+- `Cron scheduler started (news ingestion).` with `{ schedule }` once on startup
 - For each tick:
-  - `cron:mako:ingestion:start` with `{ schedule }`
-  - `cron:mako:ingestion:done` with `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
-  - `cron:mako:ingestion:error` with `{ durationMs, error }` on failure
+  - `cron:news:ingestion:start` with `{ schedule }`
+  - `cron:news:ingestion:done` with `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
+  - `cron:news:ingestion:error` with `{ durationMs, error }` on failure
 
 ### Error behavior
 
@@ -78,7 +78,7 @@ Cron does not crash the process on an ingestion failure:
 
 If you need retries/backoff, that is an **infrastructure concern** that belongs in the cron entry point (or a wrapper around it), but the use-case flow ordering must remain in the orchestrator.
 
-## CLI: `makoIngestCli.ts`
+## CLI: `newsIngestCli.ts`
 
 ### Purpose
 
@@ -90,16 +90,16 @@ Manually run ingestion once from the command line, reusing the exact same orches
   - run the entire flow (scrape/hash/filter)
   - do **not** write to SQLite
 - `--headful` or `--headed`
-  - force Playwright to show the browser UI by setting `MAKO_SCRAPER_HEADLESS=false`
+  - force Playwright to show the browser UI by setting `INGEST_SCRAPER_HEADLESS=false`
 - `--slowmo-ms=<number>`
-  - sets `MAKO_SCRAPER_SLOWMO_MS` to slow down visible browser actions
+  - sets `INGEST_SCRAPER_SLOWMO_MS` to slow down visible browser actions
 
 ### How flags affect config
 
 CLI overrides are done by setting env vars using module-owned keys:
 
-- `process.env[MAKO_ENV.SCRAPER_HEADLESS] = "false"`
-- `process.env[MAKO_ENV.SCRAPER_SLOWMO_MS] = "150"` (example)
+- `process.env[INGEST_ENV.SCRAPER_HEADLESS] = "false"`
+- `process.env[INGEST_ENV.SCRAPER_SLOWMO_MS] = "150"` (example)
 
 This is intentionally done before building the container so the scraper is instantiated with the overridden config.
 
@@ -109,7 +109,7 @@ This is intentionally done before building the container so the scraper is insta
 2. Apply env overrides for scraper visibility / slow motion (optional)
 3. Build DI container once via `buildContainer()`
 4. Run orchestrator once:
-   - `container.ingest.mako.run({ dryRun })`
+   - `container.ingest.news.run({ dryRun })`
 5. Log done/error
 6. Explicitly terminate:
    - `process.exit(0)` on success
@@ -119,9 +119,9 @@ This is intentionally done before building the container so the scraper is insta
 
 It emits:
 
-- `cli:mako:ingestion:start` with `{ dryRun }`
-- `cli:mako:ingestion:done` with summary `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
-- `cli:mako:ingestion:error` with `{ durationMs, error }`
+- `cli:news:ingestion:start` with `{ dryRun }`
+- `cli:news:ingestion:done` with summary `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
+- `cli:news:ingestion:error` with `{ durationMs, error }`
 
 ## Composition root participation
 
@@ -131,10 +131,10 @@ Both Cron and CLI build dependencies through:
 
 The container:
 
-- instantiates `PwMakoScraper` with config from `readMakoConfig(process.env)`
+- instantiates `PwMakoScraper` with config from `readIngestionConfig(process.env)`
 - instantiates `Sha256Hasher`
 - instantiates `SqliteNewsRepo` using `NEWS_BOT_SQLITE_PATH`
-- wires them into a single `MakoIngestOrch` instance
+- wires them into a single `NewsIngestOrch` instance
 
 This preserves:
 

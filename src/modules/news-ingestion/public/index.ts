@@ -1,11 +1,11 @@
-export { MakoIngestOrch } from "../application/MakoIngestOrch";
+export { NewsIngestOrch } from "../application/NewsIngestOrch";
 
-export type { MakoIngestResult } from "../dto/MakoIngestResult";
-export type { MakoScrapedItem } from "../dto/MakoScrapedItem";
+export type { NewsIngestResult } from "../dto/NewsIngestResult";
+export type { ScrapedNewsItem } from "../dto/ScrapedNewsItem";
 
-export type { MakoScraperPort } from "../ports/MakoScraperPort";
+export type { NewsScraperPort } from "../ports/NewsScraperPort";
 export type { NewsItemHasherPort, NewsItemHashInput } from "../ports/NewsItemHasherPort";
 export type { NewsItemsRepositoryPort, NewNewsItemToStore, InsertManyResult } from "../ports/NewsItemsRepositoryPort";
 
-export { MAKO_ENV, readMakoConfig } from "./makoEnv";
-export type { MakoRuntimeConfig, MakoScraperRuntimeConfig } from "./makoEnv";
+export { INGEST_ENV, readIngestionConfig } from "./ingestionEnv";
+export type { IngestRuntimeConfig, IngestScraperRuntimeConfig } from "./ingestionEnv";

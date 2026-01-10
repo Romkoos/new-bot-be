@@ -75,7 +75,7 @@ Why:
 `AppContainer` exposes orchestrators (not adapters) to entry points:
 
 - `health.getHealthStatusOrchestrator`
-- `ingest.mako` (ingestion orchestrator)
+- `ingest.news` (ingestion orchestrator)
 
 It also exposes a shared logger:
 
@@ -102,20 +102,20 @@ Ingestion is a more realistic multi-step use-case with multiple ports/adapters:
 
 The ingestion module owns its env contract:
 
-- `readMakoConfig(process.env)` from `src/modules/news-ingestion/public`
+- `readIngestionConfig(process.env)` from `src/modules/news-ingestion/public`
 
 This returns:
 
 - `cronSchedule` (used by cron entry point)
 - `scraper` config (used by DI to instantiate `PwMakoScraper`)
 
-The app layer does not hardcode `MAKO_*` env names; it consumes module config.
+The app layer does not hardcode `INGEST_*` env names; it consumes module config.
 
 ### 2) Instantiate adapters
 
 The container instantiates:
 
-- Scraper adapter: `new PwMakoScraper({ ...makoCfg.scraper })`
+- Scraper adapter: `new PwMakoScraper({ ...ingestCfg.scraper })`
 - Hashing adapter: `new Sha256Hasher()`
 - Repository adapter: `new SqliteNewsRepo({ sqlitePath })`
 
@@ -127,7 +127,7 @@ The container instantiates:
 
 The container wires the adapters into:
 
-- `new MakoIngestOrch({ scraper, hasher, repository, logger })`
+- `new NewsIngestOrch({ scraper, hasher, repository, logger })`
 
 This preserves the boundary:
 
@@ -143,7 +143,7 @@ Because the orchestrator depends on ports:
 
 See:
 
-- `src/modules/news-ingestion/tests/MakoIngestOrch.test.ts`
+- `src/modules/news-ingestion/tests/NewsIngestOrch.test.ts`
 
 ## Common DI pitfalls (avoid)
 

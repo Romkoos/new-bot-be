@@ -1,19 +1,19 @@
 import type { Logger } from "../../../shared/observability/logger";
-import type { MakoIngestResult } from "../dto/MakoIngestResult";
-import type { MakoScraperPort } from "../ports/MakoScraperPort";
+import type { NewsIngestResult } from "../dto/NewsIngestResult";
+import type { NewsScraperPort } from "../ports/NewsScraperPort";
 import type { NewsItemHasherPort } from "../ports/NewsItemHasherPort";
 import type { NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
 import type { NewsItemHashInput } from "../ports/NewsItemHasherPort";
 import type { NewNewsItemToStore } from "../ports/NewsItemsRepositoryPort";
 
-export interface MakoIngestDeps {
-  readonly scraper: MakoScraperPort;
+export interface NewsIngestDeps {
+  readonly scraper: NewsScraperPort;
   readonly hasher: NewsItemHasherPort;
   readonly repository: NewsItemsRepositoryPort;
   readonly logger: Logger;
 }
 
-export interface MakoIngestOpts {
+export interface NewsIngestOpts {
   /**
    * When enabled, the use-case performs scraping + hashing + filtering, but does not write to storage.
    */
@@ -21,7 +21,7 @@ export interface MakoIngestOpts {
 }
 
 /**
- * Ingests the latest Mako Channel 12 news items.
+ * Ingests the latest news items from a concrete source via a scraper adapter.
  *
  * This is the single use-case that owns the entire flow:
  * scrape → hash → filter → store
@@ -29,13 +29,13 @@ export interface MakoIngestOpts {
  * Placement rule: orchestrators live only in `src/modules/MODULE_NAME/application`.
  * Entry-point rule: API/Cron/CLI must call only this orchestrator and must not embed the flow.
  */
-export class MakoIngestOrch {
-  private readonly scraper: MakoScraperPort;
+export class NewsIngestOrch {
+  private readonly scraper: NewsScraperPort;
   private readonly hasher: NewsItemHasherPort;
   private readonly repository: NewsItemsRepositoryPort;
   private readonly logger: Logger;
 
-  public constructor(deps: MakoIngestDeps) {
+  public constructor(deps: NewsIngestDeps) {
     this.scraper = deps.scraper;
     this.hasher = deps.hasher;
     this.repository = deps.repository;
@@ -47,20 +47,20 @@ export class MakoIngestOrch {
    *
    * Observability requirement: implementations must log start, counts, early-exit, and total time.
    */
-  public async run(options: MakoIngestOpts): Promise<MakoIngestResult> {
+  public async run(options: NewsIngestOpts): Promise<NewsIngestResult> {
     const startedAt = Date.now();
-    this.logger.info("ingestion:mako:start", { dryRun: options.dryRun });
+    this.logger.info("ingestion:news:start", { dryRun: options.dryRun });
 
     const scraped = await this.scraper.scrapeFirstFive();
-    this.logger.info("ingestion:mako:scraped", { count: scraped.length });
+    this.logger.info("ingestion:news:scraped", { count: scraped.length });
 
-    const SOURCE: NewsItemHashInput["source"] = "mako-channel12";
+    const source = this.scraper.source;
 
     // Hash stability rule:
     // - Normalize minimally before hashing (trim + collapse whitespace + publishedAt ISO-or-null).
     const normalizedForHash: NewsItemHashInput[] = scraped
       .map((item) => ({
-        source: SOURCE,
+        source,
         rawText: normalizeRawText(item.text),
         publishedAt: normalizePublishedAtIsoOrNull(item.publishedAt),
       }))
@@ -77,7 +77,8 @@ export class MakoIngestOrch {
     const newItems = hashed.filter((h) => !existing.has(h.hash));
     const filteredOutCount = hashed.length - newItems.length;
 
-    this.logger.info("ingestion:mako:filtered", {
+    this.logger.info("ingestion:news:filtered", {
+      source,
       existingCount: existing.size,
       filteredOutCount,
       newItemsCount: newItems.length,
@@ -85,9 +86,9 @@ export class MakoIngestOrch {
 
     if (newItems.length === 0) {
       const durationMs = Date.now() - startedAt;
-      this.logger.info("ingestion:mako:early-exit:no-new-items", { durationMs });
+      this.logger.info("ingestion:news:early-exit:no-new-items", { source, durationMs });
       return {
-        source: "mako-channel12",
+        source,
         dryRun: options.dryRun,
         scrapedCount: scraped.length,
         newItemsCount: 0,
@@ -105,7 +106,7 @@ export class MakoIngestOrch {
       };
 
       return {
-        source: "mako-channel12",
+        source: item.normalized.source,
         hash: item.hash,
         rawText: item.normalized.rawText,
         publishedAt: item.normalized.publishedAt,
@@ -123,7 +124,8 @@ export class MakoIngestOrch {
     }
 
     const durationMs = Date.now() - startedAt;
-    this.logger.info("ingestion:mako:done", {
+    this.logger.info("ingestion:news:done", {
+      source,
       dryRun: options.dryRun,
       scrapedCount: scraped.length,
       newItemsCount: toStore.length,
@@ -132,7 +134,7 @@ export class MakoIngestOrch {
     });
 
     return {
-      source: "mako-channel12",
+      source,
       dryRun: options.dryRun,
       scrapedCount: scraped.length,
       newItemsCount: toStore.length,
@@ -155,3 +157,4 @@ function normalizePublishedAtIsoOrNull(value: string | null): string | null {
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString();
 }
+

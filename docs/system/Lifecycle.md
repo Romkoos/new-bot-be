@@ -21,11 +21,11 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 ### Cron entry points
 
 - Health cron: `src/app/cron/healthCron.ts`
-- Ingestion cron: `src/app/cron/makoIngestCron.ts`
+- Ingestion cron: `src/app/cron/newsIngestCron.ts`
 
 ### CLI entry point
 
-- Ingestion CLI: `src/app/cli/makoIngestCli.ts`
+- Ingestion CLI: `src/app/cli/newsIngestCli.ts`
 
 ### Composition root (DI container)
 
@@ -34,7 +34,7 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 ### Orchestrators (use-case owners)
 
 - Health: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
-- Ingestion: `src/modules/news-ingestion/application/MakoIngestOrch.ts`
+- Ingestion: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
 ## Lifecycle stages (high level)
 
@@ -127,13 +127,13 @@ This prevents the process from hanging due to open handles.
 
 Ingestion is a use-case that can be invoked by:
 
-- Cron (scheduled ingestion): `makoIngestCron.ts`
-- CLI (manual ingestion): `makoIngestCli.ts`
+- Cron (scheduled ingestion): `newsIngestCron.ts`
+- CLI (manual ingestion): `newsIngestCli.ts`
 
 Both are thin wrappers that:
 
 - build the container
-- invoke `MakoIngestOrch.run({ dryRun: ... })`
+- invoke `NewsIngestOrch.run({ dryRun: ... })`
 - do not embed scrape/hash/filter/store logic
 
 The orchestrator owns the flow:

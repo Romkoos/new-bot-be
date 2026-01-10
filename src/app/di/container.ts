@@ -1,5 +1,5 @@
 import { GetHealthStatusOrchestrator, createSystemTimePort } from "../../modules/health/public";
-import { MakoIngestOrch, readMakoConfig } from "../../modules/news-ingestion/public";
+import { NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestion/public";
 import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
@@ -18,7 +18,7 @@ export interface AppContainer {
     readonly getHealthStatusOrchestrator: GetHealthStatusOrchestrator;
   };
   readonly ingest: {
-    readonly mako: MakoIngestOrch;
+    readonly news: NewsIngestOrch;
   };
 }
 
@@ -37,15 +37,15 @@ export function buildContainer(): AppContainer {
   // News ingestion module wiring
   // NOTE: Public APIs export only contracts (orchestrators/DTOs/port types). Adapters are instantiated here (composition root).
   const sqlitePath = process.env.NEWS_BOT_SQLITE_PATH ?? "./data/news-bot.sqlite";
-  const makoCfg = readMakoConfig(process.env);
+  const ingestCfg = readIngestionConfig(process.env);
 
-  const makoScraper = new PwMakoScraper({
-    ...makoCfg.scraper,
+  const scraper = new PwMakoScraper({
+    ...ingestCfg.scraper,
   });
   const hasher = new Sha256Hasher();
   const newsRepository = new SqliteNewsRepo({ sqlitePath });
-  const mako = new MakoIngestOrch({
-    scraper: makoScraper,
+  const news = new NewsIngestOrch({
+    scraper,
     hasher,
     repository: newsRepository,
     logger,
@@ -57,7 +57,7 @@ export function buildContainer(): AppContainer {
       getHealthStatusOrchestrator,
     },
     ingest: {
-      mako,
+      news,
     },
   };
 }

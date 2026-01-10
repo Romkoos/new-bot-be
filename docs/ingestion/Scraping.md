@@ -18,7 +18,7 @@ Scraping is **infrastructure only**. It must not:
 
 ## Where it lives
 
-- Scraper port: `src/modules/news-ingestion/ports/MakoScraperPort.ts`
+- Scraper port: `src/modules/news-ingestion/ports/NewsScraperPort.ts`
 - Playwright adapter: `src/modules/news-ingestion/adapters/PwMakoScraper.ts`
 
 ## Target URL and selectors
@@ -175,7 +175,7 @@ If this becomes an issue, consider moving “today” derivation to:
 
 ## Outputs and constraints
 
-The adapter returns `MakoScrapedItem[]`:
+The adapter returns `ScrapedNewsItem[]`:
 
 - `text: string`
 - `publishedAt: string | null` (ISO or null)
