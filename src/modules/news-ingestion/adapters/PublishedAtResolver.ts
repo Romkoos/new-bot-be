@@ -3,7 +3,7 @@ import type { PublishedAtResolverPort } from "../ports/PublishedAtResolverPort";
 
 const DEFAULT_TZ = "Asia/Jerusalem";
 
-export interface IsraelPublishedAtResolverOpts {
+export interface PublishedAtResolverOpts {
   /**
    * IANA timezone identifier used as the source of truth for interpreting scraped `HH:mm`.
    *
@@ -22,15 +22,15 @@ export interface IsraelPublishedAtResolverOpts {
 /**
  * Timezone-aware `publishedAt` resolver for sources that provide only an `HH:mm` string.
  *
- * Specific rule for the Mako drawer feed:
- * - If the scraped time is in `23:00–23:59` and the current time in Israel is in `00:00–00:59`,
- *   the publication date is considered "yesterday" (in Israel time).
+ * Midnight rollover rule (timezone-driven):
+ * - If the scraped time is in `23:00–23:59` and the current time in the configured timezone is in `00:00–00:59`,
+ *   the publication date is considered "yesterday" (in that timezone).
  */
-export class IsraelPublishedAtResolver implements PublishedAtResolverPort {
+export class PublishedAtResolver implements PublishedAtResolverPort {
   private readonly timezoneId: string;
   private readonly now: () => DateTime;
 
-  public constructor(opts: IsraelPublishedAtResolverOpts = {}) {
+  public constructor(opts: PublishedAtResolverOpts = {}) {
     this.timezoneId = opts.timezoneId ?? DEFAULT_TZ;
     this.now = opts.now ?? (() => DateTime.now());
   }
@@ -49,23 +49,23 @@ export class IsraelPublishedAtResolver implements PublishedAtResolverPort {
     if (hours < 0 || hours > 23) return null;
     if (minutes < 0 || minutes > 59) return null;
 
-    const nowIl = this.now().setZone(this.timezoneId);
-    if (!nowIl.isValid) return null;
+    const nowZoned = this.now().setZone(this.timezoneId);
+    if (!nowZoned.isValid) return null;
 
-    // Build "today HH:mm" in Israel time.
-    let publishedIl = nowIl
+    // Build "today HH:mm" in the configured timezone.
+    let publishedZoned = nowZoned
       .startOf("day")
       .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
 
-    if (!publishedIl.isValid) return null;
+    if (!publishedZoned.isValid) return null;
 
     // Midnight rollover rule: scraped 23:xx but now is 00:xx → interpret as yesterday.
-    if (hours === 23 && nowIl.hour === 0) {
-      publishedIl = publishedIl.minus({ days: 1 });
+    if (hours === 23 && nowZoned.hour === 0) {
+      publishedZoned = publishedZoned.minus({ days: 1 });
     }
 
     // Persist in canonical ISO UTC form, matching previous `Date#toISOString()` behavior.
-    return publishedIl.toUTC().toISO() ?? null;
+    return publishedZoned.toUTC().toISO() ?? null;
   }
 }
 

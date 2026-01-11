@@ -18,7 +18,7 @@ This must work correctly across month boundaries and varying month lengths.
 ## Technical Approach
 - Introduce a dedicated **published-at resolver** port + adapter inside `news-ingestion`:
   - Port: `PublishedAtResolverPort` (module contract).
-  - Adapter: `IsraelPublishedAtResolver` (timezone-aware implementation using a third-party date library).
+  - Adapter: `PublishedAtResolver` (timezone-aware implementation using a third-party date library; behavior determined by configured timezone).
 - Inject the resolver into `PwMakoScraper` so the scraper stays infrastructure-only but delegates time interpretation to a focused dependency.
 - Use `luxon` to:
   - Read “now” in `Asia/Jerusalem`.
@@ -29,7 +29,7 @@ This must work correctly across month boundaries and varying month lengths.
 
 ## Implementation Steps
 - [x] Step 1: Add `PublishedAtResolverPort` to `src/modules/news-ingestion/ports/` (documented public contract).
-- [x] Step 2: Add `IsraelPublishedAtResolver` adapter using `luxon` with:
+- [x] Step 2: Add `PublishedAtResolver` adapter using `luxon` with:
   - `resolveIsoOrNull(timeText: string): string | null`
   - explicit `Asia/Jerusalem` zone handling
   - rollover rule (23:xx + now 00:xx → yesterday)
@@ -46,10 +46,10 @@ This must work correctly across month boundaries and varying month lengths.
 
 ## Files to Modify/Create
 - `src/modules/news-ingestion/ports/PublishedAtResolverPort.ts` - new port contract.
-- `src/modules/news-ingestion/adapters/IsraelPublishedAtResolver.ts` - new adapter implementation (timezone-aware).
+- `src/modules/news-ingestion/adapters/PublishedAtResolver.ts` - new adapter implementation (timezone-aware; timezone-driven behavior).
 - `src/modules/news-ingestion/adapters/PwMakoScraper.ts` - inject resolver + delegate publishedAt derivation.
 - `src/app/di/container.ts` - DI wiring for resolver.
-- `src/modules/news-ingestion/tests/IsraelPublishedAtResolver.test.ts` - new unit tests.
+- `src/modules/news-ingestion/tests/PublishedAtResolver.test.ts` - new unit tests.
 - `package.json` - add `luxon` dependency.
 - `docs/ingestion/Scraping.md` - update parsing section to reference resolver.
 - `docs/ingestion/FailureModes.md` - update mitigation to match implementation.
