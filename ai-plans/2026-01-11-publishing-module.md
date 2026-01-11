@@ -135,3 +135,11 @@ Proposal:
   - Gemini output is “Markdown”, but Telegram is configured as `MarkdownV2` by default. Confirm we should escape MarkdownV2 (recommended), otherwise messages will often fail to send.
 - Dropping `prepared_content`:
   - Prefer automatic drop on startup (via SQLite adapter) or a one-time explicit CLI command?
+
+## Completed
+- Date completed: 2026-01-11
+- Deviations:
+  - `.env.example` creation was blocked by a global ignore rule, so env templates were initially added as `env.example` / `env.local.example` and later removed per request after `.env` / `.env.local` were populated locally.
+  - `news_items.processed` is marked when a pending digest is persisted (before publish) to preserve the “unprocessed selection” semantics and avoid re-digesting the same rows.
+- Follow-ups:
+  - Consider adding a publishing cron entry point once the end-to-end flow is validated in production.
