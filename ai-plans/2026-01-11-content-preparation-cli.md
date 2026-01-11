@@ -60,7 +60,7 @@ Additional fields (for traceability/debuggability):
 
 ## Implementation Steps
 - [x] Step 1: Create module skeleton `src/modules/content-preparation/*` (DTOs, ports, orchestrator, public API).
-- [ ] Step 2: Implement `SqliteContentPreparationRepo`:
+- [x] Step 2: Implement `SqliteContentPreparationRepo`:
   - ensure `news_items.processed` exists (ALTER TABLE when missing)
   - ensure `news_items.media_type` and `news_items.media_url` exist (ALTER TABLE when missing)
   - create `prepared_content` table
