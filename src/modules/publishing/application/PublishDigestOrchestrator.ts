@@ -134,26 +134,24 @@ function parseSelectedNewsItemString(value: string): SelectedNewsItem {
 
 function buildDigestPrompt(newsTexts: ReadonlyArray<string>): string {
   // Keep prompt assembly deterministic for debuggability and test stability.
-  const asJson = JSON.stringify(newsTexts);
-  return [
-    "You are a news editor.",
-    "Your task is to filter news by their level of interest and write professional digests.",
-    "",
-    "Your writing style should target a young audience. Do not use profanity, but you may use slang where appropriate. In news of a tragic nature, slang is likely inappropriate.",
-    "",
-    "Below is an array of strings in Hebrew. Each string represents a news item. You should:",
-    "",
-    "translate these news items into Russian;",
-    "",
-    "filter out entries that do not contain actual news content;",
-    "",
-    "filter out uninteresting or completely trivial news, such as “a 36-year-old man fell off a scooter”;",
-    "",
-    "compose a news digest consisting of a headline and one sentence;",
-    "",
-    "format the result in Markdown.",
-    "",
-    asJson,
-  ].join("\n");
+  const header =
+    "You are a news editor.\n" +
+    "Your task is to filter news by their level of interest and write professional digests.\n" +
+    "\n" +
+    "Your writing style should target a young audience. Do not use profanity, but you may use slang where appropriate. In news of a tragic nature, slang is likely inappropriate.\n" +
+    "\n" +
+    "Below is an array of strings in Hebrew. Each string represents a news item. You should:\n" +
+    "\n" +
+    "translate these news items into Russian;\n" +
+    "\n" +
+    "filter out entries that do not contain actual news content;\n" +
+    "\n" +
+    "filter out uninteresting or completely trivial news, such as “a 36-year-old man fell off a scooter”;\n" +
+    "\n" +
+    "compose a news digest consisting of a headline and one sentence;\n" +
+    "\n" +
+    "format the result in Markdown.\n";
+
+  return `${header}\n${JSON.stringify(newsTexts)}`;
 }
 
