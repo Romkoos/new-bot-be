@@ -65,7 +65,7 @@ Additional fields (for traceability/debuggability):
   - ensure `news_items.media_type` and `news_items.media_url` exist (ALTER TABLE when missing)
   - create `prepared_content` table
   - implement read-unprocessed + transactional “insert run + mark processed”
-- [ ] Step 3: Implement `DefaultContentProcessor` adapter (strings include metadata) and wire into orchestrator.
+- [x] Step 3: Implement `DefaultContentProcessor` adapter (strings include metadata) and wire into orchestrator.
 - [ ] Step 4: Wire into DI container and add CLI entry-point + scripts.
 - [ ] Step 5: Add tests (Vitest):
   - happy path inserts prepared run and marks items processed
