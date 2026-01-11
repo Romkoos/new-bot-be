@@ -51,9 +51,9 @@ Update the publishing flow so it:
 
 ## Implementation Steps
 - [x] Step 1: Add `DigestPostAssemblerPort` and adapter `TelegramMarkdownV2DigestPostAssembler`.
-- [ ] Step 2: Update orchestrator to parse `string[]` and assemble final post via the port.
-- [ ] Step 3: Update Telegram publisher to stop escaping and just send text as-is.
-- [ ] Step 4: Wire the assembler adapter in `src/app/di/container.ts`.
+- [x] Step 2: Update orchestrator to parse `string[]` and assemble final post via the port.
+- [x] Step 3: Update Telegram publisher to stop escaping and just send text as-is.
+- [x] Step 4: Wire the assembler adapter in `src/app/di/container.ts`.
 - [ ] Step 5: Build + quick manual run of `npm run dev:cli:publish` (with env configured).
 
 ## Files to Modify/Create

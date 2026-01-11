@@ -31,7 +31,9 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     const parseMode = parseTelegramParseMode(this.parseModeRaw);
 
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    const text = parseMode === "MarkdownV2" ? escapeTelegramMarkdownV2(input.text) : input.text;
+    // Important: do NOT escape here.
+    // If `parse_mode` is `MarkdownV2`, the caller must provide properly-escaped MarkdownV2.
+    const text = input.text;
 
     this.logger?.info("telegram:sendMessage:request", {
       chatId: redactChatId(chatId),
@@ -105,18 +107,5 @@ function parseTelegramParseMode(value: string | undefined): TelegramParseMode | 
   if (!value) return undefined;
   if (value === "MarkdownV2" || value === "Markdown" || value === "HTML") return value;
   throw new Error(`TelegramMarkdownPublisher: unsupported TELEGRAM_PARSE_MODE "${value}".`);
-}
-
-/**
- * Escapes text for Telegram `MarkdownV2` parse mode.
- *
- * This is intentionally deterministic and conservative:
- * - Escapes all MarkdownV2-reserved characters to avoid Telegram API failures.
- * - This may reduce formatting fidelity, but makes publishing reliable.
- */
-function escapeTelegramMarkdownV2(text: string): string {
-  // Escape backslashes first to avoid double-escaping.
-  const escapedSlashes = text.replace(/\\/g, "\\\\");
-  return escapedSlashes.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
 }
 

@@ -7,6 +7,7 @@ import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNews
 import { PublishDigestOrchestrator } from "../../modules/publishing/public";
 import { GoogleGeminiTextGenerator } from "../../modules/publishing/adapters/GoogleGeminiTextGenerator";
 import { SqlitePublishingRepo } from "../../modules/publishing/adapters/SqlitePublishingRepo";
+import { TelegramMarkdownV2DigestPostAssembler } from "../../modules/publishing/adapters/TelegramMarkdownV2DigestPostAssembler";
 import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
 import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
@@ -73,11 +74,13 @@ export function buildContainer(): AppContainer {
   // Publishing module wiring
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
   const textGenerator = new GoogleGeminiTextGenerator({ env: process.env });
+  const postAssembler = new TelegramMarkdownV2DigestPostAssembler();
   const publisher = new TelegramMarkdownPublisher({ env: process.env, logger });
   const publishDigest = new PublishDigestOrchestrator({
     newsSelection: publishingRepo,
     digestRepository: publishingRepo,
     textGenerator,
+    postAssembler,
     publisher,
     logger,
   });

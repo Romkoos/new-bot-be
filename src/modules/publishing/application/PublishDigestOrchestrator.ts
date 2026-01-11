@@ -1,15 +1,16 @@
 import type { Logger } from "../../../shared/observability/logger";
 import type { PublishDigestResult } from "../dto/PublishDigestResult";
+import type { DigestPostAssemblerPort } from "../ports/DigestPostAssemblerPort";
 import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
 import type { MarkdownPublisherPort } from "../ports/MarkdownPublisherPort";
 import type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 import type { TextGenerationPort } from "../ports/TextGenerationPort";
-import { normalizeDigestText } from "./normalizeDigestText";
 
 export interface PublishDigestDeps {
   readonly newsSelection: NewsSelectionPort;
   readonly textGenerator: TextGenerationPort;
   readonly publisher: MarkdownPublisherPort;
+  readonly postAssembler: DigestPostAssemblerPort;
   readonly digestRepository: DigestRepositoryPort;
   readonly logger: Logger;
 }
@@ -19,8 +20,8 @@ export interface PublishDigestDeps {
  *
  * Flow owner:
  * - select unprocessed news texts
- * - generate digest via LLM
- * - normalize digest text (minimal, deterministic)
+ * - generate digest items via LLM (JSON array of strings)
+ * - assemble a final post (header + bullets + footer)
  * - persist digest (pending)
  * - publish to external channel
  * - mark digest as published
@@ -32,6 +33,7 @@ export class PublishDigestOrchestrator {
   private readonly newsSelection: NewsSelectionPort;
   private readonly textGenerator: TextGenerationPort;
   private readonly publisher: MarkdownPublisherPort;
+  private readonly postAssembler: DigestPostAssemblerPort;
   private readonly digestRepository: DigestRepositoryPort;
   private readonly logger: Logger;
 
@@ -39,6 +41,7 @@ export class PublishDigestOrchestrator {
     this.newsSelection = deps.newsSelection;
     this.textGenerator = deps.textGenerator;
     this.publisher = deps.publisher;
+    this.postAssembler = deps.postAssembler;
     this.digestRepository = deps.digestRepository;
     this.logger = deps.logger;
   }
@@ -68,20 +71,22 @@ export class PublishDigestOrchestrator {
 
     const prompt = buildDigestPrompt(sourceNewsTexts);
     const generated = await this.textGenerator.generateText({ prompt });
-    const normalized = normalizeDigestText(generated.text);
+
+    const digestItems = parseDigestItemsJson(generated.text);
+    const postText = this.postAssembler.assemblePost({ items: digestItems });
 
     const persisted = await this.digestRepository.createPendingDigest({
-      digestText: normalized,
+      digestText: postText,
       sourceItemIds,
       sourceNewsTexts,
       ...(generated.model ? { llmModel: generated.model } : {}),
     });
 
-    const published = await this.publisher.publishMarkdown({ text: normalized });
+    const published = await this.publisher.publishMarkdown({ text: postText });
 
     await this.digestRepository.markDigestPublished({
       digestId: persisted.digestId,
-      finalDigestText: normalized,
+      finalDigestText: postText,
       ...(published.externalId ? { publisherExternalId: published.externalId } : {}),
     });
 
@@ -142,16 +147,49 @@ function buildDigestPrompt(newsTexts: ReadonlyArray<string>): string {
     "\n" +
     "Below is an array of strings in Hebrew. Each string represents a news item. You should:\n" +
     "\n" +
-    "translate these news items into Russian;\n" +
+    "IMPORTANT: translate these news items into Russian;\n" +
     "\n" +
     "filter out entries that do not contain actual news content;\n" +
     "\n" +
-    "filter out uninteresting or completely trivial news, such as “a 36-year-old man fell off a scooter”;\n" +
+    "filter out uninteresting or completely trivial news, such as \"a 36-year-old man fell off a scooter\";\n" +
     "\n" +
     "compose a news digest consisting of a headline and one sentence;\n" +
     "\n" +
-    "format the result in Markdown.\n";
+    "Return ONLY a JSON array of strings.\n" +
+    "Each array element must be one digest item (one headline + one sentence).\n" +
+    "Do not include any extra text before or after the JSON.\n";
 
   return `${header}\n${JSON.stringify(newsTexts)}`;
+}
+
+function parseDigestItemsJson(raw: string): ReadonlyArray<string> {
+  const trimmed = raw.trim();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    throw new Error("LLM output must be a JSON array of strings: failed to parse JSON.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("LLM output must be a JSON array of strings: expected an array.");
+  }
+
+  const items: string[] = [];
+  for (const v of parsed) {
+    if (typeof v !== "string") {
+      throw new Error("LLM output must be a JSON array of strings: array contained a non-string value.");
+    }
+    const t = v.trim();
+    if (t.length === 0) continue;
+    items.push(t);
+  }
+
+  if (items.length === 0) {
+    throw new Error("LLM output JSON array contained no non-empty strings.");
+  }
+
+  return items;
 }
 
