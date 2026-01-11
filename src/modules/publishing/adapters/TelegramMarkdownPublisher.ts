@@ -9,41 +9,33 @@ type TelegramParseMode = "MarkdownV2" | "Markdown" | "HTML";
  * Provider-specific details (bot token, chat id, parse modes) are intentionally confined to this adapter.
  */
 export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
-  private readonly token: string;
-  private readonly chatId: string;
-  private readonly parseMode: TelegramParseMode | undefined;
+  private readonly env: NodeJS.ProcessEnv;
   private readonly disablePreview: boolean;
   private readonly logger: Logger | undefined;
+  private readonly parseModeRaw: string | undefined;
 
   public constructor(params: { readonly env: NodeJS.ProcessEnv; readonly logger?: Logger }) {
-    const token = params.env.TELEGRAM_BOT_TOKEN;
-    const chatId = params.env.TELEGRAM_CHAT_ID;
-    if (!token) throw new Error("TelegramMarkdownPublisher: TELEGRAM_BOT_TOKEN is required.");
-    if (!chatId) throw new Error("TelegramMarkdownPublisher: TELEGRAM_CHAT_ID is required.");
-
-    this.token = token;
-    this.chatId = chatId;
+    this.env = params.env;
     this.logger = params.logger ?? undefined;
-
-    const parseMode = params.env.TELEGRAM_PARSE_MODE?.trim();
-    if (parseMode === "MarkdownV2" || parseMode === "Markdown" || parseMode === "HTML") {
-      this.parseMode = parseMode;
-    } else if (!parseMode) {
-      this.parseMode = undefined;
-    } else {
-      throw new Error(`TelegramMarkdownPublisher: unsupported TELEGRAM_PARSE_MODE "${parseMode}".`);
-    }
+    this.parseModeRaw = params.env.TELEGRAM_PARSE_MODE?.trim() || undefined;
 
     this.disablePreview = parseEnvBool(params.env.TELEGRAM_DISABLE_PREVIEW, false);
   }
 
   public async publishMarkdown(input: { readonly text: string }): Promise<{ readonly externalId?: string }> {
-    const url = `https://api.telegram.org/bot${this.token}/sendMessage`;
-    const text = this.parseMode === "MarkdownV2" ? escapeTelegramMarkdownV2(input.text) : input.text;
+    const token = this.env.TELEGRAM_BOT_TOKEN;
+    const chatId = this.env.TELEGRAM_CHAT_ID;
+    if (!token) throw new Error("TelegramMarkdownPublisher: TELEGRAM_BOT_TOKEN is required.");
+    if (!chatId) throw new Error("TelegramMarkdownPublisher: TELEGRAM_CHAT_ID is required.");
+
+    const parseMode = parseTelegramParseMode(this.parseModeRaw);
+
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const text = parseMode === "MarkdownV2" ? escapeTelegramMarkdownV2(input.text) : input.text;
 
     this.logger?.info("telegram:sendMessage:request", {
-      chatId: redactChatId(this.chatId),
-      parseMode: this.parseMode ?? null,
+      chatId: redactChatId(chatId),
+      parseMode: parseMode ?? null,
       disablePreview: this.disablePreview,
       originalTextLength: input.text.length,
       finalTextLength: text.length,
@@ -51,10 +43,10 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     });
 
     const payload: Record<string, unknown> = {
-      chat_id: this.chatId,
+      chat_id: chatId,
       text,
       disable_web_page_preview: this.disablePreview,
-      ...(this.parseMode ? { parse_mode: this.parseMode } : {}),
+      ...(parseMode ? { parse_mode: parseMode } : {}),
     };
 
     const res = await fetch(url, {
@@ -107,6 +99,12 @@ function redactChatId(chatId: string): string {
   const trimmed = chatId.trim();
   if (trimmed.length <= 6) return "***";
   return `${trimmed.slice(0, 3)}…${trimmed.slice(-3)}`;
+}
+
+function parseTelegramParseMode(value: string | undefined): TelegramParseMode | undefined {
+  if (!value) return undefined;
+  if (value === "MarkdownV2" || value === "Markdown" || value === "HTML") return value;
+  throw new Error(`TelegramMarkdownPublisher: unsupported TELEGRAM_PARSE_MODE "${value}".`);
 }
 
 /**
