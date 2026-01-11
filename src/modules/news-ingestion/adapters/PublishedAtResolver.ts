@@ -65,7 +65,11 @@ export class PublishedAtResolver implements PublishedAtResolverPort {
     }
 
     // Persist in canonical ISO UTC form, matching previous `Date#toISOString()` behavior.
-    return publishedZoned.toUTC().toISO() ?? null;
+    return (
+      publishedZoned
+        .toUTC()
+        .toISO({ suppressSeconds: false, suppressMilliseconds: false }) ?? null
+    );
   }
 }
 
