@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, Frame, Page } from "playwright";
 import type { ScrapedNewsItem } from "../dto/ScrapedNewsItem";
 import type { NewsScraperPort } from "../ports/NewsScraperPort";
+import type { PublishedAtResolverPort } from "../ports/PublishedAtResolverPort";
 
 const URL = "https://www.mako.co.il/news-channel12";
 const SEL_DRAWER_BTN = ".mc-drawer__btn";
@@ -20,6 +21,13 @@ const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export interface PwMakoScraperOpts {
+  /**
+   * Resolver for converting the scraped `HH:mm` time string into an ISO timestamp.
+   *
+   * Required so the scraper can remain focused on DOM extraction while delegating timezone/rollover logic.
+   */
+  readonly publishedAtResolver: PublishedAtResolverPort;
+
   /**
    * When `true` (default), runs headless.
    * When `false`, shows the browser UI (useful for debugging).
@@ -72,6 +80,8 @@ export interface PwMakoScraperOpts {
 export class PwMakoScraper implements NewsScraperPort {
   public readonly source = "mako-channel12";
 
+  private readonly publishedAtResolver: PublishedAtResolverPort;
+
   private readonly options: {
     readonly headless: boolean;
     readonly slowMoMs?: number;
@@ -82,7 +92,8 @@ export class PwMakoScraper implements NewsScraperPort {
     readonly timezoneId: string;
   };
 
-  public constructor(options: PwMakoScraperOpts = {}) {
+  public constructor(options: PwMakoScraperOpts) {
+    this.publishedAtResolver = options.publishedAtResolver;
     this.options = {
       headless: options.headless ?? true,
       ...(options.slowMoMs !== undefined ? { slowMoMs: options.slowMoMs } : {}),
@@ -102,7 +113,7 @@ export class PwMakoScraper implements NewsScraperPort {
       await page.goto(URL, { waitUntil: "domcontentloaded", timeout: T_GOTO_MS });
       await clickDrawer(page.frames());
       await page.waitForSelector(SEL_NEWS_CONT, { timeout: T_WAIT_CONT_MS });
-      return await extractTop5(page);
+      return await extractTop5(page, this.publishedAtResolver);
     } finally {
       await page.close().catch(() => undefined);
       await close().catch(() => undefined);
@@ -139,7 +150,7 @@ async function clickDrawer(frames: ReadonlyArray<Frame>): Promise<void> {
   await locator.click({ timeout: T_CLICK_MS });
 }
 
-async function extractTop5(page: Page): Promise<ScrapedNewsItem[]> {
+async function extractTop5(page: Page, publishedAtResolver: PublishedAtResolverPort): Promise<ScrapedNewsItem[]> {
   const loc = page.locator(SEL_NEWS_ITEM);
   const extracted = (await loc.evaluateAll(
     (nodes: Element[], timeSel: string) => {
@@ -159,7 +170,7 @@ async function extractTop5(page: Page): Promise<ScrapedNewsItem[]> {
   )) as Array<{ text: string; timeText: string }>;
 
   return extracted
-    .map((x) => ({ text: x.text, publishedAt: parseTodayTimeToIsoOrNull(x.timeText) }))
+    .map((x) => ({ text: x.text, publishedAt: publishedAtResolver.resolveIsoOrNull(x.timeText) }))
     .filter((x) => x.text.length > 0);
 }
 
@@ -205,24 +216,5 @@ async function createCtx(opts: {
       await browser.close();
     },
   };
-}
-
-function parseTodayTimeToIsoOrNull(hhmm: string): string | null {
-  const trimmed = hhmm.trim();
-  if (!trimmed) return null;
-
-  // Expected: "HH:mm"
-  const match = /^(\d{1,2}):(\d{2})$/.exec(trimmed);
-  if (!match) return null;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  if (hours < 0 || hours > 23) return null;
-  if (minutes < 0 || minutes > 59) return null;
-
-  const now = new Date();
-  const local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
-  return local.toISOString();
 }
 

@@ -1,6 +1,7 @@
 import { GetHealthStatusOrchestrator, createSystemTimePort } from "../../modules/health/public";
 import { NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestion/public";
 import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";
+import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
 import { PrepareContentOrchestrator } from "../../modules/content-preparation/public";
@@ -45,8 +46,13 @@ export function buildContainer(): AppContainer {
   const sqlitePath = process.env.NEWS_BOT_SQLITE_PATH ?? "./data/news-bot.sqlite";
   const ingestCfg = readIngestionConfig(process.env);
 
+  const publishedAtResolver = new PublishedAtResolver({
+    timezoneId: ingestCfg.scraper.timezoneId,
+  });
+
   const scraper = new PwMakoScraper({
     ...ingestCfg.scraper,
+    publishedAtResolver,
   });
   const hasher = new Sha256Hasher();
   const newsRepository = new SqliteNewsRepo({ sqlitePath });
