@@ -29,7 +29,7 @@ This must work correctly across month boundaries and varying month lengths.
 
 ## Implementation Steps
 - [x] Step 1: Add `PublishedAtResolverPort` to `src/modules/news-ingestion/ports/` (documented public contract).
-- [ ] Step 2: Add `IsraelPublishedAtResolver` adapter using `luxon` with:
+- [x] Step 2: Add `IsraelPublishedAtResolver` adapter using `luxon` with:
   - `resolveIsoOrNull(timeText: string): string | null`
   - explicit `Asia/Jerusalem` zone handling
   - rollover rule (23:xx + now 00:xx → yesterday)
