@@ -47,12 +47,13 @@ export function buildContainer(): AppContainer {
   const ingestCfg = readIngestionConfig(process.env);
 
   const publishedAtResolver = new PublishedAtResolver({
-    timezoneId: ingestCfg.scraper.timezoneId,
+    ...(ingestCfg.scraper.timezoneId ? { timezoneId: ingestCfg.scraper.timezoneId } : {}),
   });
 
   const scraper = new PwMakoScraper({
     ...ingestCfg.scraper,
     publishedAtResolver,
+    logger,
   });
   const hasher = new Sha256Hasher();
   const newsRepository = new SqliteNewsRepo({ sqlitePath });

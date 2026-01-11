@@ -36,6 +36,7 @@ This must work correctly across month boundaries and varying month lengths.
   - optional injected `now()` for tests
 - [x] Step 3: Wire resolver into `PwMakoScraper` and remove the inline `parseTodayTimeToIsoOrNull` helper.
 - [x] Step 4: Update DI wiring (`src/app/di/container.ts`) to instantiate and pass the resolver to `PwMakoScraper`.
+- [x] Step 4b: Add operational logs around time extraction + resolution to debug `publishedAt` issues.
 - [ ] Step 5: Add unit tests for the resolver covering:
   - regular same-day parsing (e.g. now 12:00, scraped 10:52)
   - midnight rollover (now 00:25, scraped 23:55 → yesterday)
