@@ -41,7 +41,7 @@ This must work correctly across month boundaries and varying month lengths.
   - regular same-day parsing (e.g. now 12:00, scraped 10:52)
   - midnight rollover (now 00:25, scraped 23:55 → yesterday)
   - month boundary rollover (e.g. now 2026-02-01 00:05, scraped 23:55 → 2026-01-31 23:55)
-- [ ] Step 6: Update docs to reflect the new adapter and behavior:
+- [x] Step 6: Update docs to reflect the new adapter and behavior:
   - `docs/ingestion/Scraping.md`
   - `docs/ingestion/FailureModes.md`
   - [x] Step 7: Extract shared date/time formatting rules into `src/shared/` and refactor all timestamp formatting to use it.
