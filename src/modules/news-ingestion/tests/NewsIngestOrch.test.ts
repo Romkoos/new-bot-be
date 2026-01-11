@@ -5,6 +5,7 @@ import type { NewsScraperPort } from "../ports/NewsScraperPort";
 import type { NewsItemHasherPort, NewsItemHashInput } from "../ports/NewsItemHasherPort";
 import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
 import type { Logger } from "../../../shared/observability/logger";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
 function createTestLogger(): Logger & { readonly info: ReturnType<typeof vi.fn>; readonly error: ReturnType<typeof vi.fn> } {
   return {
@@ -40,8 +41,12 @@ describe("NewsIngestOrch", () => {
     };
 
     const logger = createTestLogger();
+    const timestampFormatter: UtcIsoTimestampFormatterPort = {
+      nowUtcIso: vi.fn(() => "2026-01-01T00:00:00.000Z"),
+      formatUtcIso: vi.fn((d: Date) => d.toISOString()),
+    };
 
-    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger, timestampFormatter });
     await orchestrator.run({ dryRun: true });
 
     expect(seenHashInputs).toEqual([
@@ -71,8 +76,12 @@ describe("NewsIngestOrch", () => {
     };
 
     const logger = createTestLogger();
+    const timestampFormatter: UtcIsoTimestampFormatterPort = {
+      nowUtcIso: vi.fn(() => "2026-01-01T00:00:00.000Z"),
+      formatUtcIso: vi.fn((d: Date) => d.toISOString()),
+    };
 
-    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger, timestampFormatter });
     const result = await orchestrator.run({ dryRun: false });
 
     expect(result.scrapedCount).toBe(2);
@@ -108,8 +117,12 @@ describe("NewsIngestOrch", () => {
     };
 
     const logger = createTestLogger();
+    const timestampFormatter: UtcIsoTimestampFormatterPort = {
+      nowUtcIso: vi.fn(() => "2026-01-01T00:00:00.000Z"),
+      formatUtcIso: vi.fn((d: Date) => d.toISOString()),
+    };
 
-    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger });
+    const orchestrator = new NewsIngestOrch({ scraper, hasher, repository, logger, timestampFormatter });
     const result = await orchestrator.run({ dryRun: true });
 
     expect(result.newItemsCount).toBe(1);

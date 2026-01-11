@@ -1,6 +1,7 @@
 import { SystemTimeAdapter } from "../adapters/SystemTimeAdapter";
 import { GetHealthStatusOrchestrator } from "../application/GetHealthStatusOrchestrator";
 import { TimePort } from "../ports/TimePort";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
 export type { GetHealthStatusResponse } from "../dto/GetHealthStatusResponse";
 export type { TimePort } from "../ports/TimePort";
@@ -19,7 +20,7 @@ export { GetHealthStatusOrchestrator };
  * This lets the composition root choose and create the adapter without deep-importing
  * module internals (adapters remain internal to the module).
  */
-export function createSystemTimePort(): TimePort {
-  return new SystemTimeAdapter();
+export function createSystemTimePort(timestampFormatter: UtcIsoTimestampFormatterPort): TimePort {
+  return new SystemTimeAdapter(timestampFormatter);
 }
 

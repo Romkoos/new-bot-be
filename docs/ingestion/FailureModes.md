@@ -110,7 +110,8 @@ Mitigations:
 
 Where:
 
-- `parseTodayTimeToIsoOrNull`
+- `PublishedAtResolver` (time interpretation)
+- `PwMakoScraper` (time extraction)
 
 Symptoms:
 
@@ -118,12 +119,16 @@ Symptoms:
 
 Root causes:
 
-- time text not matching `HH:mm`
-- time in a different element or includes extra text
+- time element is not found for the item (DOM structure change)
+- extracted time text does not contain an `HH:mm` substring
+- time is in a different element or includes unexpected markers
 
 Mitigations:
 
-- Adjust extraction logic to normalize time text before parsing.
+- Use scraper debug logs to confirm what was extracted and how it resolved:
+  - `scraper:mako:extracted`
+  - `scraper:mako:publishedAt:resolved`
+- Adjust time extraction logic in `PwMakoScraper` if the site changed DOM structure.
 
 ### Timezone mismatch (today vs site)
 
@@ -133,12 +138,13 @@ Symptom:
 
 Reason:
 
-- `parseTodayTimeToIsoOrNull` uses Node’s `Date()` to derive “today”.
+- If “today” is derived from the wrong timezone, an `HH:mm` timestamp can be assigned to the wrong date around midnight.
 
 Mitigation options (code changes):
 
 - Inject a time source/clock.
-- Use a timezone-aware date library and interpret `HH:mm` in `Asia/Jerusalem`.
+- Use a timezone-aware date library and interpret `HH:mm` in `Asia/Jerusalem` (current implementation: `PublishedAtResolver`).
+- Centralize timestamp formatting via `UtcIsoTimestampFormatterPort` to avoid inconsistent ISO output across modules.
 
 ## Hashing failures
 

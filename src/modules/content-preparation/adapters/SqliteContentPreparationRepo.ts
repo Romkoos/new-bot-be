@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 import type { NewsItemToPrepare } from "../dto/NewsItemToPrepare";
 import type {
   ContentPreparationRepositoryPort,
@@ -35,10 +36,12 @@ type TableInfoRow = {
  */
 export class SqliteContentPreparationRepo implements ContentPreparationRepositoryPort {
   private readonly db: Database.Database;
+  private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
-  public constructor(params: { readonly sqlitePath: string }) {
+  public constructor(params: { readonly sqlitePath: string; readonly timestampFormatter: UtcIsoTimestampFormatterPort }) {
     ensureSqliteParentDirectory(params.sqlitePath);
     this.db = new Database(params.sqlitePath);
+    this.timestampFormatter = params.timestampFormatter;
     this.ensureSchema();
   }
 
@@ -88,7 +91,7 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
       throw new Error("persistPreparedContentAndMarkProcessed: sourceItemIds must not be empty.");
     }
 
-    const nowIso = new Date().toISOString();
+    const nowIso = this.timestampFormatter.nowUtcIso();
 
     const insertPreparedStmt = this.db.prepare(
       `

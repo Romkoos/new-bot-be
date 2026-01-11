@@ -145,33 +145,37 @@ Extraction uses:
 
 This is the “first five items from the beginning of the DOM tree” requirement.
 
-## Publish time parsing (`parseTodayTimeToIsoOrNull`)
+## Publish time parsing (`PublishedAtResolver`)
 
 The site provides only an `HH:mm` string.
 
-Parsing logic:
+Parsing strategy:
 
-- Validate format via regex: `/^(\\d{1,2}):(\\d{2})$/`
-- Validate ranges: hours 0-23, minutes 0-59
-- Create a Date using **today’s date** and the extracted time:
-  - `new Date(year, month, day, hours, minutes, 0, 0)`
-- Return ISO string via `toISOString()`
+- The scraper extracts the time string from `.mc-message-footer__time`.
+  - Important: the time element is not always a direct descendant of the per-item node, so extraction walks up the DOM to find the correct container.
+- The extracted time text is resolved by `PublishedAtResolver` (timezone-aware).
+  - It interprets `HH:mm` in a configured timezone (default: `Asia/Jerusalem`).
+  - It applies the midnight rollover rule:
+    - if scraped time is `23:xx` and the current time in that timezone is `00:xx`, the publish date is treated as **yesterday**.
+- The resulting timestamp is formatted via the shared `UtcIsoTimestampFormatterPort` into canonical UTC ISO with milliseconds:
+  - `YYYY-MM-DDTHH:mm:ss.SSSZ`
 
 If parsing fails, returns `null`.
 
 ### Important nuance: timezone source of truth
 
-This function uses Node’s `Date()` in the current process timezone for the “today” date.
+The timezone source of truth is the resolver configuration (default: `Asia/Jerusalem`), not Node’s process timezone.
 
 Even though Playwright context has `timezoneId`, the Node process timezone might differ.
 
 If you run ingestion on a server with a different timezone than Israel, “today” could mismatch around midnight.
 
-If this becomes an issue, consider moving “today” derivation to:
+This is mitigated by the resolver being timezone-aware and by using the shared timestamp formatter for consistent output.
 
-- an injected time port, or
-- a timezone-aware library, or
-- passing an explicit “now” source into the adapter.
+For debugging, the scraper emits logs:
+
+- `scraper:mako:extracted` (timeTexts, empty counts)
+- `scraper:mako:publishedAt:resolved` (`timeText` → `publishedAt`)
 
 ## Outputs and constraints
 
