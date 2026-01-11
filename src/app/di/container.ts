@@ -4,9 +4,10 @@ import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScrap
 import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
-import { PrepareContentOrchestrator } from "../../modules/content-preparation/public";
-import { DefaultContentProcessor } from "../../modules/content-preparation/adapters/DefaultContentProcessor";
-import { SqliteContentPreparationRepo } from "../../modules/content-preparation/adapters/SqliteContentPreparationRepo";
+import { PublishDigestOrchestrator } from "../../modules/publishing/public";
+import { GoogleGeminiTextGenerator } from "../../modules/publishing/adapters/GoogleGeminiTextGenerator";
+import { SqlitePublishingRepo } from "../../modules/publishing/adapters/SqlitePublishingRepo";
+import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
 import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
 
@@ -25,8 +26,8 @@ export interface AppContainer {
   readonly ingest: {
     readonly news: NewsIngestOrch;
   };
-  readonly contentPreparation: {
-    readonly prepare: PrepareContentOrchestrator;
+  readonly publishing: {
+    readonly publishDigest: PublishDigestOrchestrator;
   };
 }
 
@@ -68,12 +69,15 @@ export function buildContainer(): AppContainer {
     timestampFormatter,
   });
 
-  // Content preparation module wiring
-  const contentPreparationRepository = new SqliteContentPreparationRepo({ sqlitePath, timestampFormatter });
-  const contentProcessor = new DefaultContentProcessor();
-  const prepare = new PrepareContentOrchestrator({
-    repository: contentPreparationRepository,
-    processor: contentProcessor,
+  // Publishing module wiring
+  const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
+  const textGenerator = new GoogleGeminiTextGenerator({ env: process.env });
+  const publisher = new TelegramMarkdownPublisher({ env: process.env });
+  const publishDigest = new PublishDigestOrchestrator({
+    newsSelection: publishingRepo,
+    digestRepository: publishingRepo,
+    textGenerator,
+    publisher,
     logger,
   });
 
@@ -85,8 +89,8 @@ export function buildContainer(): AppContainer {
     ingest: {
       news,
     },
-    contentPreparation: {
-      prepare,
+    publishing: {
+      publishDigest,
     },
   };
 }

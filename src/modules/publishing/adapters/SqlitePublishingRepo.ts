@@ -2,21 +2,12 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
-import type { NewsItemToPrepare } from "../dto/NewsItemToPrepare";
-import type {
-  ContentPreparationRepositoryPort,
-  PersistPreparedContentInput,
-  PersistPreparedContentResult,
-} from "../ports/ContentPreparationRepositoryPort";
+import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
+import type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 
 type DbNewsItemRow = {
   readonly id: number;
-  readonly source: string;
-  readonly hash: string;
   readonly raw_text: string;
-  readonly published_at: string | null;
-  readonly media_type: string | null;
-  readonly media_url: string | null;
 };
 
 type TableInfoRow = {
@@ -24,17 +15,17 @@ type TableInfoRow = {
 };
 
 /**
- * SQLite-backed repository for the content preparation use-case.
+ * SQLite adapter for the publishing module.
  *
  * Responsibilities:
- * - Read unprocessed `news_items`.
- * - Insert a `prepared_content` row.
- * - Mark source `news_items` rows as processed (atomically with the insert).
+ * - Select unprocessed news items (selection semantics match the previous `content-preparation` module).
+ * - Persist digests and track publish status.
+ * - Mark selected `news_items` as processed when a pending digest is persisted (atomic transaction).
  *
  * Schema strategy:
- * - This repo follows the existing project pattern: schema is ensured/extended on initialization (no migrations folder).
+ * - This repo follows the project pattern: schema is ensured/extended on initialization.
  */
-export class SqliteContentPreparationRepo implements ContentPreparationRepositoryPort {
+export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepositoryPort {
   private readonly db: Database.Database;
   private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
@@ -43,6 +34,7 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
     this.db = new Database(params.sqlitePath);
     this.timestampFormatter = params.timestampFormatter;
     this.ensureSchema();
+    this.dropLegacyPreparedContentTableIfExists();
   }
 
   /**
@@ -55,17 +47,17 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
     this.db.close();
   }
 
-  public async findUnprocessedNewsItems(): Promise<ReadonlyArray<NewsItemToPrepare>> {
+  /**
+   * Selection semantics:
+   * - Matches the previous logic in `SqliteContentPreparationRepo`.
+   * - Only change: returns strings (JSON strings for traceability), not objects.
+   */
+  public async findUnprocessedNewsTexts(): Promise<ReadonlyArray<string>> {
     const stmt = this.db.prepare<unknown[], DbNewsItemRow>(
       `
       SELECT
         id,
-        source,
-        hash,
-        raw_text,
-        published_at,
-        media_type,
-        media_url
+        raw_text
       FROM news_items
       WHERE processed = 0
       ORDER BY id ASC
@@ -73,30 +65,41 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
     );
 
     const rows = stmt.all();
-    return rows.map((r) => ({
-      id: r.id,
-      source: r.source,
-      hash: r.hash,
-      rawText: r.raw_text,
-      publishedAt: r.published_at,
-      mediaType: normalizeMediaType(r.media_type),
-      mediaUrl: r.media_url,
-    }));
+
+    // Return JSON strings so the orchestrator can deterministically recover `id` for traceability.
+    return rows.map((r) => JSON.stringify({ id: r.id, rawText: r.raw_text }));
   }
 
-  public async persistPreparedContentAndMarkProcessed(
-    input: PersistPreparedContentInput,
-  ): Promise<PersistPreparedContentResult> {
+  public async createPendingDigest(input: {
+    readonly digestText: string;
+    readonly sourceItemIds: ReadonlyArray<number>;
+    readonly sourceNewsTexts: ReadonlyArray<string>;
+    readonly llmModel?: string;
+  }): Promise<{ readonly digestId: number }> {
     if (input.sourceItemIds.length === 0) {
-      throw new Error("persistPreparedContentAndMarkProcessed: sourceItemIds must not be empty.");
+      throw new Error("createPendingDigest: sourceItemIds must not be empty.");
+    }
+    if (input.sourceNewsTexts.length === 0) {
+      throw new Error("createPendingDigest: sourceNewsTexts must not be empty.");
     }
 
     const nowIso = this.timestampFormatter.nowUtcIso();
 
-    const insertPreparedStmt = this.db.prepare(
+    const insertDigestStmt = this.db.prepare(
       `
-      INSERT INTO prepared_content (created_at, payload_json, source_items_count, source_item_ids_json)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO digests (
+        created_at,
+        updated_at,
+        digest_text,
+        is_published,
+        source_items_count,
+        source_item_ids_json,
+        source_news_texts_json,
+        llm_model,
+        published_at,
+        publisher_external_id
+      )
+      VALUES (?, ?, ?, 0, ?, ?, ?, ?, NULL, NULL)
       `.trim(),
     );
 
@@ -109,29 +112,51 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
       `.trim(),
     );
 
-    const tx = this.db.transaction((args: PersistPreparedContentInput) => {
-      const insertInfo = insertPreparedStmt.run(
+    const tx = this.db.transaction((args: typeof input) => {
+      const insertInfo = insertDigestStmt.run(
         nowIso,
-        args.payloadJson,
-        args.sourceItemsCount,
+        nowIso,
+        args.digestText,
+        args.sourceItemIds.length,
         JSON.stringify(args.sourceItemIds),
+        JSON.stringify(args.sourceNewsTexts),
+        args.llmModel ?? null,
       );
 
-      const preparedContentId = Number(insertInfo.lastInsertRowid);
+      const digestId = Number(insertInfo.lastInsertRowid);
 
-      const updateInfo = markProcessedStmt.run(...args.sourceItemIds);
+      markProcessedStmt.run(...args.sourceItemIds);
 
-      return {
-        preparedContentId,
-        markedProcessedCount: updateInfo.changes,
-      } satisfies PersistPreparedContentResult;
+      return { digestId };
     });
 
     return tx(input);
   }
 
+  public async markDigestPublished(input: {
+    readonly digestId: number;
+    readonly finalDigestText: string;
+    readonly publisherExternalId?: string;
+  }): Promise<void> {
+    const nowIso = this.timestampFormatter.nowUtcIso();
+    const stmt = this.db.prepare(
+      `
+      UPDATE digests
+      SET
+        updated_at = ?,
+        digest_text = ?,
+        is_published = 1,
+        published_at = ?,
+        publisher_external_id = ?
+      WHERE id = ?
+      `.trim(),
+    );
+
+    stmt.run(nowIso, input.finalDigestText, nowIso, input.publisherExternalId ?? null, input.digestId);
+  }
+
   private ensureSchema(): void {
-    // Ensure base table exists (this module depends on it, and it may be used before ingestion runs).
+    // Ensure base table exists (publishing depends on it, and it may be used before ingestion runs).
     this.db.exec(
       `
       CREATE TABLE IF NOT EXISTS news_items (
@@ -170,16 +195,27 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
 
     this.db.exec(
       `
-      CREATE TABLE IF NOT EXISTS prepared_content (
+      CREATE TABLE IF NOT EXISTS digests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         created_at TEXT NOT NULL,
-        payload_json TEXT NOT NULL,
-        published INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        digest_text TEXT NOT NULL,
+        is_published INTEGER NOT NULL DEFAULT 0,
         source_items_count INTEGER NOT NULL,
-        source_item_ids_json TEXT NOT NULL
+        source_item_ids_json TEXT NOT NULL,
+        source_news_texts_json TEXT NOT NULL,
+        llm_model TEXT NULL,
+        published_at TEXT NULL,
+        publisher_external_id TEXT NULL
       );
       `.trim(),
     );
+  }
+
+  private dropLegacyPreparedContentTableIfExists(): void {
+    // We are intentionally removing the old `prepared_content` storage surface.
+    // This is a one-way operation for local/dev DBs and should be done with care in production.
+    this.db.exec("DROP TABLE IF EXISTS prepared_content;");
   }
 
   private ensureColumnExists(params: { readonly table: string; readonly column: string; readonly alterSql: string }): void {
@@ -199,11 +235,5 @@ function ensureSqliteParentDirectory(sqlitePath: string): void {
   // If a relative file path is used (default: ./data/news-bot.sqlite), ensure the directory exists.
   const dir = dirname(sqlitePath);
   mkdirSync(dir, { recursive: true });
-}
-
-function normalizeMediaType(value: string | null): "video" | "image" | null {
-  if (value === "video") return "video";
-  if (value === "image") return "image";
-  return null;
 }
 

@@ -14,7 +14,7 @@ This folder documents each business module under `src/modules/` in a consistent 
 
 - [`health`](./health.md)
 - [`news-ingestion`](./news-ingestion.md)
-- [`content-preparation`](./content-preparation.md)
+- [`publishing`](./publishing.md)
 
 ## How to read module docs
 
