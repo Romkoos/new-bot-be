@@ -71,7 +71,7 @@ Additional fields (for traceability/debuggability):
   - happy path inserts prepared run and marks items processed
   - processor error: does not mark items processed
   - persistence error: does not mark items processed
-- [ ] Step 6: Update docs:
+- [x] Step 6: Update docs:
   - add module doc `docs/modules/content-preparation.md`
   - update `docs/modules/README.md`
   - update `docs/ingestion/Storage.md` to include:
@@ -114,3 +114,7 @@ Additional fields (for traceability/debuggability):
 ## Open Questions
 - None.
 
+## Completed
+- Date completed: 2026-01-11
+- Deviations:
+  - None.
