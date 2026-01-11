@@ -5,6 +5,7 @@ import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
 import type { MarkdownPublisherPort } from "../ports/MarkdownPublisherPort";
 import type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 import type { TextGenerationPort } from "../ports/TextGenerationPort";
+import { parseDigestItemsFromLlmResponse } from "./parseDigestItemsFromLlmResponse";
 
 export interface PublishDigestDeps {
   readonly newsSelection: NewsSelectionPort;
@@ -72,7 +73,7 @@ export class PublishDigestOrchestrator {
     const prompt = buildDigestPrompt(sourceNewsTexts);
     const generated = await this.textGenerator.generateText({ prompt });
 
-    const digestItems = parseDigestItemsJson(generated.text);
+    const digestItems = parseDigestItemsFromLlmResponse(generated.text);
     const postText = this.postAssembler.assemblePost({ items: digestItems });
 
     const persisted = await this.digestRepository.createPendingDigest({
@@ -160,36 +161,5 @@ function buildDigestPrompt(newsTexts: ReadonlyArray<string>): string {
     "Do not include any extra text before or after the JSON.\n";
 
   return `${header}\n${JSON.stringify(newsTexts)}`;
-}
-
-function parseDigestItemsJson(raw: string): ReadonlyArray<string> {
-  const trimmed = raw.trim();
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(trimmed) as unknown;
-  } catch {
-    throw new Error("LLM output must be a JSON array of strings: failed to parse JSON.");
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("LLM output must be a JSON array of strings: expected an array.");
-  }
-
-  const items: string[] = [];
-  for (const v of parsed) {
-    if (typeof v !== "string") {
-      throw new Error("LLM output must be a JSON array of strings: array contained a non-string value.");
-    }
-    const t = v.trim();
-    if (t.length === 0) continue;
-    items.push(t);
-  }
-
-  if (items.length === 0) {
-    throw new Error("LLM output JSON array contained no non-empty strings.");
-  }
-
-  return items;
 }
 
