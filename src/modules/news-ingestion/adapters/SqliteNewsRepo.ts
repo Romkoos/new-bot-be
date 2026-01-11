@@ -3,6 +3,10 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
 
+type TableInfoRow = {
+  readonly name: string;
+};
+
 /**
  * SQLite-backed repository for ingested news items.
  *
@@ -37,8 +41,8 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
 
     const insertStmt = this.db.prepare(
       `
-      INSERT OR IGNORE INTO news_items (source, hash, raw_text, published_at, scraped_at, payload_json)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO news_items (source, hash, raw_text, published_at, scraped_at, payload_json, media_type, media_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `.trim(),
     );
 
@@ -54,6 +58,8 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
           item.publishedAt,
           nowIso,
           item.payloadJson,
+          null, // media_type (storage-only for now)
+          null, // media_url (storage-only for now)
         );
         insertedCount += info.changes;
       }
@@ -73,10 +79,41 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
         raw_text TEXT NOT NULL,
         published_at TEXT NULL,
         scraped_at TEXT NOT NULL,
-        payload_json TEXT NOT NULL
+        payload_json TEXT NOT NULL,
+        processed INTEGER NOT NULL DEFAULT 0,
+        media_type TEXT NULL,
+        media_url TEXT NULL
       );
       `.trim(),
     );
+
+    // Evolve schema for older DBs created before the new columns existed.
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "processed",
+      alterSql: `ALTER TABLE news_items ADD COLUMN processed INTEGER NOT NULL DEFAULT 0;`,
+    });
+
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "media_type",
+      alterSql: `ALTER TABLE news_items ADD COLUMN media_type TEXT NULL;`,
+    });
+
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "media_url",
+      alterSql: `ALTER TABLE news_items ADD COLUMN media_url TEXT NULL;`,
+    });
+  }
+
+  private ensureColumnExists(params: { readonly table: string; readonly column: string; readonly alterSql: string }): void {
+    const rows = this.db
+      .prepare<unknown[], TableInfoRow>(`PRAGMA table_info(${params.table});`)
+      .all();
+    const existing = new Set(rows.map((r) => r.name));
+    if (existing.has(params.column)) return;
+    this.db.exec(params.alterSql);
   }
 }
 

@@ -42,6 +42,9 @@ Columns:
 - `published_at TEXT NULL` (ISO string or null)
 - `scraped_at TEXT NOT NULL` (ISO string set at insertion time)
 - `payload_json TEXT NOT NULL` (serialized normalized payload)
+- `processed INTEGER NOT NULL DEFAULT 0` (0/1; used by content preparation to track whether a row has been processed)
+- `media_type TEXT NULL` (allowed values: `video` or `image`, otherwise `NULL`)
+- `media_url TEXT NULL` (URL string, otherwise `NULL`)
 
 ### Why `source` exists
 
@@ -96,12 +99,16 @@ Key behavior:
 - If input list is empty:
   - returns `{ insertedCount: 0 }`
 - Uses a single prepared statement:
-  - `INSERT OR IGNORE INTO news_items (...) VALUES (?, ?, ?, ?, ?, ?)`
+  - `INSERT OR IGNORE INTO news_items (...) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 - Sets `scraped_at` once for the entire batch:
   - `const nowIso = new Date().toISOString()`
 - Executes inserts inside a SQLite transaction:
   - sums `info.changes` for each insert
   - returns total inserted rows as `insertedCount`
+
+Notes:
+
+- The ingestion flow currently does not populate `media_type` / `media_url` yet; the storage adapter writes `NULL` values for these fields for now.
 
 ### Deduplication semantics
 
