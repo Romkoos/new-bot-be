@@ -1,4 +1,5 @@
 import type { MarkdownPublisherPort } from "../ports/MarkdownPublisherPort";
+import type { Logger } from "../../../shared/observability/logger";
 
 type TelegramParseMode = "MarkdownV2" | "Markdown" | "HTML";
 
@@ -12,8 +13,9 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
   private readonly chatId: string;
   private readonly parseMode: TelegramParseMode | undefined;
   private readonly disablePreview: boolean;
+  private readonly logger: Logger | undefined;
 
-  public constructor(params: { readonly env: NodeJS.ProcessEnv }) {
+  public constructor(params: { readonly env: NodeJS.ProcessEnv; readonly logger?: Logger }) {
     const token = params.env.TELEGRAM_BOT_TOKEN;
     const chatId = params.env.TELEGRAM_CHAT_ID;
     if (!token) throw new Error("TelegramMarkdownPublisher: TELEGRAM_BOT_TOKEN is required.");
@@ -21,6 +23,7 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
 
     this.token = token;
     this.chatId = chatId;
+    this.logger = params.logger ?? undefined;
 
     const parseMode = params.env.TELEGRAM_PARSE_MODE?.trim();
     if (parseMode === "MarkdownV2" || parseMode === "Markdown" || parseMode === "HTML") {
@@ -38,6 +41,15 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     const url = `https://api.telegram.org/bot${this.token}/sendMessage`;
     const text = this.parseMode === "MarkdownV2" ? escapeTelegramMarkdownV2(input.text) : input.text;
 
+    this.logger?.info("telegram:sendMessage:request", {
+      chatId: redactChatId(this.chatId),
+      parseMode: this.parseMode ?? null,
+      disablePreview: this.disablePreview,
+      originalTextLength: input.text.length,
+      finalTextLength: text.length,
+      finalTextPreview: truncate(text, 300),
+    });
+
     const payload: Record<string, unknown> = {
       chat_id: this.chatId,
       text,
@@ -52,6 +64,11 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     });
 
     const bodyText = await res.text();
+    this.logger?.info("telegram:sendMessage:response", {
+      status: res.status,
+      ok: res.ok,
+      bodyPreview: truncate(bodyText, 1000),
+    });
     if (!res.ok) {
       throw new Error(`TelegramMarkdownPublisher: sendMessage failed (${res.status}): ${bodyText}`);
     }
@@ -78,6 +95,18 @@ function parseEnvBool(value: string | undefined, defaultValue: boolean): boolean
   if (v === "true" || v === "1" || v === "yes") return true;
   if (v === "false" || v === "0" || v === "no") return false;
   return defaultValue;
+}
+
+function truncate(value: string, maxLen: number): string {
+  if (value.length <= maxLen) return value;
+  return `${value.slice(0, maxLen)}…`;
+}
+
+function redactChatId(chatId: string): string {
+  // Preserve enough to correlate configs, but avoid dumping full identifiers into logs.
+  const trimmed = chatId.trim();
+  if (trimmed.length <= 6) return "***";
+  return `${trimmed.slice(0, 3)}…${trimmed.slice(-3)}`;
 }
 
 /**
