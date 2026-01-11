@@ -9,11 +9,13 @@
     "dev:cron:ingest": "tsx watch src/app/cron/newsIngestCron.ts",
     "dev:cli:ingest": "tsx src/app/cli/newsIngestCli.ts",
     "dev:cli:ingest:dry-run": "tsx src/app/cli/newsIngestCli.ts --dry-run",
+    "dev:cli:prepare": "tsx src/app/cli/prepareContentCli.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/app/api/server.js",
     "start:cron": "node dist/app/cron/healthCron.js",
     "start:cron:ingest": "node dist/app/cron/newsIngestCron.js",
     "start:cli:ingest": "node dist/app/cli/newsIngestCli.js",
+    "start:cli:prepare": "node dist/app/cli/prepareContentCli.js",
     "test": "vitest run"
   },
   "dependencies": {
