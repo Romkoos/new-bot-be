@@ -31,8 +31,8 @@ async function main(): Promise<void> {
     const durationMs = Date.now() - startedAt;
 
     container.logger.info("cli:content:prepare:done", {
-      durationMs,
       ...result,
+      durationMs,
     });
 
     // This is a CLI entry-point; terminate explicitly after the run finishes.
