@@ -215,7 +215,25 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
   private dropLegacyPreparedContentTableIfExists(): void {
     // We are intentionally removing the old `prepared_content` storage surface.
     // This is a one-way operation for local/dev DBs and should be done with care in production.
-    this.db.exec("DROP TABLE IF EXISTS prepared_content;");
+    try {
+      this.db.exec("DROP TABLE IF EXISTS prepared_content;");
+      return;
+    } catch {
+      // In rare cases (e.g., a partially-corrupted schema), SQLite can retain an entry in `sqlite_schema`
+      // that makes `DROP TABLE` fail with errors like:
+      // - "Could not find schema for table: prepared_content"
+      //
+      // We perform a narrowly-scoped cleanup for this legacy table only.
+      this.db.exec("PRAGMA writable_schema = 1;");
+      this.db.exec(
+        `
+        DELETE FROM sqlite_schema
+        WHERE name = 'prepared_content'
+        `.trim(),
+      );
+      this.db.exec("PRAGMA writable_schema = 0;");
+      this.db.exec("VACUUM;");
+    }
   }
 
   private ensureColumnExists(params: { readonly table: string; readonly column: string; readonly alterSql: string }): void {

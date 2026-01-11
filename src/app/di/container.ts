@@ -47,6 +47,7 @@ export function buildContainer(): AppContainer {
   // News ingestion module wiring
   // NOTE: Public APIs export only contracts (orchestrators/DTOs/port types). Adapters are instantiated here (composition root).
   const sqlitePath = process.env.NEWS_BOT_SQLITE_PATH ?? "./data/news-bot.sqlite";
+  logger.info("di:sqlite:path", { sqlitePath });
   const ingestCfg = readIngestionConfig(process.env);
 
   const publishedAtResolver = new PublishedAtResolver({
