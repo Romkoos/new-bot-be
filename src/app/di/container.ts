@@ -3,6 +3,9 @@ import { NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestio
 import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
+import { PrepareContentOrchestrator } from "../../modules/content-preparation/public";
+import { DefaultContentProcessor } from "../../modules/content-preparation/adapters/DefaultContentProcessor";
+import { SqliteContentPreparationRepo } from "../../modules/content-preparation/adapters/SqliteContentPreparationRepo";
 import { createConsoleLogger } from "../../shared/observability/logger";
 
 /**
@@ -19,6 +22,9 @@ export interface AppContainer {
   };
   readonly ingest: {
     readonly news: NewsIngestOrch;
+  };
+  readonly contentPreparation: {
+    readonly prepare: PrepareContentOrchestrator;
   };
 }
 
@@ -51,6 +57,15 @@ export function buildContainer(): AppContainer {
     logger,
   });
 
+  // Content preparation module wiring
+  const contentPreparationRepository = new SqliteContentPreparationRepo({ sqlitePath });
+  const contentProcessor = new DefaultContentProcessor();
+  const prepare = new PrepareContentOrchestrator({
+    repository: contentPreparationRepository,
+    processor: contentProcessor,
+    logger,
+  });
+
   return {
     logger,
     health: {
@@ -58,6 +73,9 @@ export function buildContainer(): AppContainer {
     },
     ingest: {
       news,
+    },
+    contentPreparation: {
+      prepare,
     },
   };
 }

@@ -66,7 +66,7 @@ Additional fields (for traceability/debuggability):
   - create `prepared_content` table
   - implement read-unprocessed + transactional “insert run + mark processed”
 - [x] Step 3: Implement `DefaultContentProcessor` adapter (strings include metadata) and wire into orchestrator.
-- [ ] Step 4: Wire into DI container and add CLI entry-point + scripts.
+- [x] Step 4: Wire into DI container and add CLI entry-point + scripts.
 - [ ] Step 5: Add tests (Vitest):
   - happy path inserts prepared run and marks items processed
   - processor error: does not mark items processed
