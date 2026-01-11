@@ -42,6 +42,16 @@ export class SqliteContentPreparationRepo implements ContentPreparationRepositor
     this.ensureSchema();
   }
 
+  /**
+   * Closes the underlying SQLite connection.
+   *
+   * This is primarily useful for short-lived processes (CLI runs, tests) to release
+   * file locks on Windows.
+   */
+  public close(): void {
+    this.db.close();
+  }
+
   public async findUnprocessedNewsItems(): Promise<ReadonlyArray<NewsItemToPrepare>> {
     const stmt = this.db.prepare<unknown[], DbNewsItemRow>(
       `
