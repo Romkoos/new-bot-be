@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
 type TableInfoRow = {
   readonly name: string;
@@ -16,10 +17,12 @@ type TableInfoRow = {
  */
 export class SqliteNewsRepo implements NewsItemsRepositoryPort {
   private readonly db: Database.Database;
+  private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
-  public constructor(params: { readonly sqlitePath: string }) {
+  public constructor(params: { readonly sqlitePath: string; readonly timestampFormatter: UtcIsoTimestampFormatterPort }) {
     ensureSqliteParentDirectory(params.sqlitePath);
     this.db = new Database(params.sqlitePath);
+    this.timestampFormatter = params.timestampFormatter;
     this.ensureSchema();
   }
 
@@ -46,7 +49,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
       `.trim(),
     );
 
-    const nowIso = new Date().toISOString();
+    const nowIso = this.timestampFormatter.nowUtcIso();
 
     const tx = this.db.transaction((batch: ReadonlyArray<NewNewsItemToStore>) => {
       let insertedCount = 0;

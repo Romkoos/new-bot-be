@@ -7,6 +7,7 @@ import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNews
 import { PrepareContentOrchestrator } from "../../modules/content-preparation/public";
 import { DefaultContentProcessor } from "../../modules/content-preparation/adapters/DefaultContentProcessor";
 import { SqliteContentPreparationRepo } from "../../modules/content-preparation/adapters/SqliteContentPreparationRepo";
+import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
 
 /**
@@ -36,9 +37,10 @@ export interface AppContainer {
  */
 export function buildContainer(): AppContainer {
   const logger = createConsoleLogger();
+  const timestampFormatter = new SystemUtcIsoTimestampFormatter();
 
   // Health module wiring
-  const timePort = createSystemTimePort();
+  const timePort = createSystemTimePort(timestampFormatter);
   const getHealthStatusOrchestrator = new GetHealthStatusOrchestrator(timePort);
 
   // News ingestion module wiring
@@ -48,6 +50,7 @@ export function buildContainer(): AppContainer {
 
   const publishedAtResolver = new PublishedAtResolver({
     ...(ingestCfg.scraper.timezoneId ? { timezoneId: ingestCfg.scraper.timezoneId } : {}),
+    timestampFormatter,
   });
 
   const scraper = new PwMakoScraper({
@@ -56,16 +59,17 @@ export function buildContainer(): AppContainer {
     logger,
   });
   const hasher = new Sha256Hasher();
-  const newsRepository = new SqliteNewsRepo({ sqlitePath });
+  const newsRepository = new SqliteNewsRepo({ sqlitePath, timestampFormatter });
   const news = new NewsIngestOrch({
     scraper,
     hasher,
     repository: newsRepository,
     logger,
+    timestampFormatter,
   });
 
   // Content preparation module wiring
-  const contentPreparationRepository = new SqliteContentPreparationRepo({ sqlitePath });
+  const contentPreparationRepository = new SqliteContentPreparationRepo({ sqlitePath, timestampFormatter });
   const contentProcessor = new DefaultContentProcessor();
   const prepare = new PrepareContentOrchestrator({
     repository: contentPreparationRepository,

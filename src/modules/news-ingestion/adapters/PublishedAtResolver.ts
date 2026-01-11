@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import type { PublishedAtResolverPort } from "../ports/PublishedAtResolverPort";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
 const DEFAULT_TZ = "Asia/Jerusalem";
 
@@ -10,6 +11,11 @@ export interface PublishedAtResolverOpts {
    * Default: `Asia/Jerusalem`.
    */
   readonly timezoneId?: string;
+
+  /**
+   * Timestamp formatter used to produce canonical persisted ISO strings.
+   */
+  readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
   /**
    * Optional "now" provider for deterministic testing.
@@ -28,10 +34,12 @@ export interface PublishedAtResolverOpts {
  */
 export class PublishedAtResolver implements PublishedAtResolverPort {
   private readonly timezoneId: string;
+  private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
   private readonly now: () => DateTime;
 
-  public constructor(opts: PublishedAtResolverOpts = {}) {
+  public constructor(opts: PublishedAtResolverOpts) {
     this.timezoneId = opts.timezoneId ?? DEFAULT_TZ;
+    this.timestampFormatter = opts.timestampFormatter;
     this.now = opts.now ?? (() => DateTime.now());
   }
 
@@ -65,11 +73,7 @@ export class PublishedAtResolver implements PublishedAtResolverPort {
     }
 
     // Persist in canonical ISO UTC form, matching previous `Date#toISOString()` behavior.
-    return (
-      publishedZoned
-        .toUTC()
-        .toISO({ suppressSeconds: false, suppressMilliseconds: false }) ?? null
-    );
+    return this.timestampFormatter.formatUtcIso(publishedZoned.toUTC().toJSDate());
   }
 }
 

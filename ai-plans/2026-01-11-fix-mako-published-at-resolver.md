@@ -44,6 +44,9 @@ This must work correctly across month boundaries and varying month lengths.
 - [ ] Step 6: Update docs to reflect the new adapter and behavior:
   - `docs/ingestion/Scraping.md`
   - `docs/ingestion/FailureModes.md`
+  - [x] Step 7: Extract shared date/time formatting rules into `src/shared/` and refactor all timestamp formatting to use it.
+  - Implement a shared formatter port+adapter) that outputs canonical UTC ISO with milliseconds (`YYYY-MM-DDTHH:mm:ss.SSSZ`).
+  - Update all production code that currently calls `toISOString()` / Luxon `toISO()` for persistence-facing timestamps to use the shared formatter.
 
 ## Files to Modify/Create
 - `src/modules/news-ingestion/ports/PublishedAtResolverPort.ts` - new port contract.
@@ -54,6 +57,8 @@ This must work correctly across month boundaries and varying month lengths.
 - `package.json` - add `luxon` dependency.
 - `docs/ingestion/Scraping.md` - update parsing section to reference resolver.
 - `docs/ingestion/FailureModes.md` - update mitigation to match implementation.
+- `src/shared/*` - shared timestamp formatting abstraction (new).
+- `src/modules/*` - refactors to route all timestamp formatting through shared code (as needed).
 
 ## Testing Strategy (if needed)
 - [ ] Run unit tests: `npm test`

@@ -10,6 +10,7 @@ import type { NewsItemToPrepare } from "../dto/NewsItemToPrepare";
 import type { ContentProcessorPort } from "../ports/ContentProcessorPort";
 import type { ContentPreparationRepositoryPort } from "../ports/ContentPreparationRepositoryPort";
 import type { Logger } from "../../../shared/observability/logger";
+import { SystemUtcIsoTimestampFormatter } from "../../../shared/adapters/SystemUtcIsoTimestampFormatter";
 
 function createTestLogger(): Logger & { readonly info: ReturnType<typeof vi.fn>; readonly error: ReturnType<typeof vi.fn> } {
   return {
@@ -30,7 +31,8 @@ function createTempSqlitePath(): { readonly sqlitePath: string; readonly cleanup
 describe("PrepareContentOrchestrator", () => {
   it("persists prepared_content and marks only previously-unprocessed news_items as processed", async () => {
     const { sqlitePath, cleanup } = createTempSqlitePath();
-    const repository = new SqliteContentPreparationRepo({ sqlitePath });
+    const timestampFormatter = new SystemUtcIsoTimestampFormatter();
+    const repository = new SqliteContentPreparationRepo({ sqlitePath, timestampFormatter });
     try {
       // Ensure schema (including prepared_content) exists.
       // Note: we will seed using a separate DB connection to the same file path.
@@ -90,7 +92,8 @@ describe("PrepareContentOrchestrator", () => {
 
   it("does not mark news_items processed when processor throws", async () => {
     const { sqlitePath, cleanup } = createTempSqlitePath();
-    const repository = new SqliteContentPreparationRepo({ sqlitePath });
+    const timestampFormatter = new SystemUtcIsoTimestampFormatter();
+    const repository = new SqliteContentPreparationRepo({ sqlitePath, timestampFormatter });
     try {
       const seedDb = new Database(sqlitePath);
       seedDb.exec(
@@ -130,7 +133,8 @@ describe("PrepareContentOrchestrator", () => {
 
   it("does not mark news_items processed when persistence fails", async () => {
     const { sqlitePath, cleanup } = createTempSqlitePath();
-    const baseRepo = new SqliteContentPreparationRepo({ sqlitePath });
+    const timestampFormatter = new SystemUtcIsoTimestampFormatter();
+    const baseRepo = new SqliteContentPreparationRepo({ sqlitePath, timestampFormatter });
     try {
       const seedDb = new Database(sqlitePath);
       seedDb.exec(

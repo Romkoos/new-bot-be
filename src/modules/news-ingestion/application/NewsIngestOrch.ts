@@ -1,4 +1,5 @@
 import type { Logger } from "../../../shared/observability/logger";
+import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 import type { NewsIngestResult } from "../dto/NewsIngestResult";
 import type { NewsScraperPort } from "../ports/NewsScraperPort";
 import type { NewsItemHasherPort } from "../ports/NewsItemHasherPort";
@@ -11,6 +12,7 @@ export interface NewsIngestDeps {
   readonly hasher: NewsItemHasherPort;
   readonly repository: NewsItemsRepositoryPort;
   readonly logger: Logger;
+  readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 }
 
 export interface NewsIngestOpts {
@@ -34,12 +36,14 @@ export class NewsIngestOrch {
   private readonly hasher: NewsItemHasherPort;
   private readonly repository: NewsItemsRepositoryPort;
   private readonly logger: Logger;
+  private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
   public constructor(deps: NewsIngestDeps) {
     this.scraper = deps.scraper;
     this.hasher = deps.hasher;
     this.repository = deps.repository;
     this.logger = deps.logger;
+    this.timestampFormatter = deps.timestampFormatter;
   }
 
   /**
@@ -62,7 +66,7 @@ export class NewsIngestOrch {
       .map((item) => ({
         source,
         rawText: normalizeRawText(item.text),
-        publishedAt: normalizePublishedAtIsoOrNull(item.publishedAt),
+        publishedAt: normalizePublishedAtIsoOrNull(item.publishedAt, this.timestampFormatter),
       }))
       .filter((n) => n.rawText.length > 0);
 
@@ -148,13 +152,13 @@ function normalizeRawText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
-function normalizePublishedAtIsoOrNull(value: string | null): string | null {
+function normalizePublishedAtIsoOrNull(value: string | null, timestampFormatter: UtcIsoTimestampFormatterPort): string | null {
   if (value == null) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
 
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString();
+  return timestampFormatter.formatUtcIso(parsed);
 }
 
