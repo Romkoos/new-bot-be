@@ -1,5 +1,4 @@
 import type { MarkdownPublisherPort } from "../ports/MarkdownPublisherPort";
-import type { Logger } from "../../../shared/observability/logger";
 
 type TelegramParseMode = "MarkdownV2" | "Markdown" | "HTML";
 
@@ -11,12 +10,10 @@ type TelegramParseMode = "MarkdownV2" | "Markdown" | "HTML";
 export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
   private readonly env: NodeJS.ProcessEnv;
   private readonly disablePreview: boolean;
-  private readonly logger: Logger | undefined;
   private readonly parseModeRaw: string | undefined;
 
-  public constructor(params: { readonly env: NodeJS.ProcessEnv; readonly logger?: Logger }) {
+  public constructor(params: { readonly env: NodeJS.ProcessEnv }) {
     this.env = params.env;
-    this.logger = params.logger ?? undefined;
     this.parseModeRaw = params.env.TELEGRAM_PARSE_MODE?.trim() || undefined;
 
     this.disablePreview = parseEnvBool(params.env.TELEGRAM_DISABLE_PREVIEW, false);
@@ -35,14 +32,6 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     // If `parse_mode` is `MarkdownV2`, the caller must provide properly-escaped MarkdownV2.
     const text = input.text;
 
-    // Keep request logging minimal to avoid leaking content and to reduce noise.
-    this.logger?.info("telegram:sendMessage:request", {
-      chatId: redactChatId(chatId),
-      parseMode: parseMode ?? null,
-      disablePreview: this.disablePreview,
-      textLength: text.length,
-    });
-
     const payload: Record<string, unknown> = {
       chat_id: chatId,
       text,
@@ -57,12 +46,6 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     });
 
     const bodyText = await res.text();
-    // Log only status + a short preview to debug Telegram errors without dumping large responses.
-    this.logger?.info("telegram:sendMessage:response", {
-      status: res.status,
-      ok: res.ok,
-      body: truncate(bodyText, 300),
-    });
     if (!res.ok) {
       throw new Error(`TelegramMarkdownPublisher: sendMessage failed (${res.status}): ${bodyText}`);
     }
@@ -89,18 +72,6 @@ function parseEnvBool(value: string | undefined, defaultValue: boolean): boolean
   if (v === "true" || v === "1" || v === "yes") return true;
   if (v === "false" || v === "0" || v === "no") return false;
   return defaultValue;
-}
-
-function truncate(value: string, maxLen: number): string {
-  if (value.length <= maxLen) return value;
-  return `${value.slice(0, maxLen)}…`;
-}
-
-function redactChatId(chatId: string): string {
-  // Preserve enough to correlate configs, but avoid dumping full identifiers into logs.
-  const trimmed = chatId.trim();
-  if (trimmed.length <= 6) return "***";
-  return `${trimmed.slice(0, 3)}…${trimmed.slice(-3)}`;
 }
 
 function parseTelegramParseMode(value: string | undefined): TelegramParseMode | undefined {

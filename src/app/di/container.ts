@@ -74,7 +74,7 @@ export function buildContainer(): AppContainer {
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
   const textGenerator = new GoogleGeminiTextGenerator({ env: process.env });
   const postAssembler = new TelegramMarkdownV2DigestPostAssembler();
-  const publisher = new TelegramMarkdownPublisher({ env: process.env, logger });
+  const publisher = new TelegramMarkdownPublisher({ env: process.env });
   const publishDigest = new PublishDigestOrchestrator({
     newsSelection: publishingRepo,
     digestRepository: publishingRepo,
