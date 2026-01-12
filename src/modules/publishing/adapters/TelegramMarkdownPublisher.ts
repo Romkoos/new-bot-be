@@ -35,13 +35,12 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     // If `parse_mode` is `MarkdownV2`, the caller must provide properly-escaped MarkdownV2.
     const text = input.text;
 
+    // Keep request logging minimal to avoid leaking content and to reduce noise.
     this.logger?.info("telegram:sendMessage:request", {
       chatId: redactChatId(chatId),
       parseMode: parseMode ?? null,
       disablePreview: this.disablePreview,
-      originalTextLength: input.text.length,
-      finalTextLength: text.length,
-      finalTextPreview: truncate(text, 300),
+      textLength: text.length,
     });
 
     const payload: Record<string, unknown> = {
@@ -58,10 +57,11 @@ export class TelegramMarkdownPublisher implements MarkdownPublisherPort {
     });
 
     const bodyText = await res.text();
+    // Log only status + a short preview to debug Telegram errors without dumping large responses.
     this.logger?.info("telegram:sendMessage:response", {
       status: res.status,
       ok: res.ok,
-      bodyPreview: truncate(bodyText, 1000),
+      body: truncate(bodyText, 300),
     });
     if (!res.ok) {
       throw new Error(`TelegramMarkdownPublisher: sendMessage failed (${res.status}): ${bodyText}`);
