@@ -198,16 +198,19 @@ async function extractTop5(
   logger?.info("scraper:mako:extracted", {
     count: extracted.length,
     emptyTimeTextCount: extracted.filter((x) => x.timeText.trim().length === 0).length,
-    timeTexts: extracted.map((x) => x.timeText),
   });
 
-  return extracted
-    .map((x, index) => {
-      const publishedAt = publishedAtResolver.resolveIsoOrNull(x.timeText);
-      logger?.info("scraper:mako:publishedAt:resolved", { index, timeText: x.timeText, publishedAt });
-      return { text: x.text, publishedAt };
-    })
+  const resolved = extracted
+    .map((x) => ({ text: x.text, publishedAt: publishedAtResolver.resolveIsoOrNull(x.timeText) }))
     .filter((x) => x.text.length > 0);
+
+  // Keep operational logging minimal: summarize publishAt parsing rather than logging per-item details.
+  logger?.info("scraper:mako:publishedAt:summary", {
+    resolvedCount: resolved.filter((x) => x.publishedAt != null).length,
+    nullCount: resolved.filter((x) => x.publishedAt == null).length,
+  });
+
+  return resolved;
 }
 
 async function createCtx(opts: {
