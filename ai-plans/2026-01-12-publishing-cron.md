@@ -25,7 +25,7 @@ Add a long-running cron entry point that:
 
 ## Implementation Steps
 - [x] Step 1: Add publishing runtime config helper (`PUBLISHING_CRON_SCHEDULE`) and export from module public API.
-- [ ] Step 2: Add `src/app/cron/publishingCron.ts` (load env, build container once, schedule job).
+- [x] Step 2: Add `src/app/cron/publishingCron.ts` (load env, build container once, schedule job).
 - [ ] Step 3: Add npm scripts for dev/start cron publish.
 - [ ] Step 4: Build and do a quick smoke run of the cron entry point (it should start and schedule without throwing).
 
