@@ -7,6 +7,7 @@
     "dev": "tsx watch src/app/api/server.ts",
     "dev:cron": "tsx watch src/app/cron/healthCron.ts",
     "dev:cron:ingest": "tsx watch src/app/cron/newsIngestCron.ts",
+    "dev:cron:publish": "tsx watch src/app/cron/publishingCron.ts",
     "dev:cli:ingest": "tsx src/app/cli/newsIngestCli.ts",
     "dev:cli:ingest:dry-run": "tsx src/app/cli/newsIngestCli.ts --dry-run",
     "dev:cli:publish": "tsx src/app/cli/publishDigestCli.ts",
@@ -14,6 +15,7 @@
     "start": "node dist/app/api/server.js",
     "start:cron": "node dist/app/cron/healthCron.js",
     "start:cron:ingest": "node dist/app/cron/newsIngestCron.js",
+    "start:cron:publish": "node dist/app/cron/publishingCron.js",
     "start:cli:ingest": "node dist/app/cli/newsIngestCli.js",
     "start:cli:publish": "node dist/app/cli/publishDigestCli.js",
     "test": "vitest run"
