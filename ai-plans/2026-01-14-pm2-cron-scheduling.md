@@ -63,3 +63,10 @@ Move responsibility for *when* cron jobs run out of the Node.js runtime and into
 - Should `ecosystem.config.cjs` also define the API process, or only the cron processes? (This plan assumes **cron-only** to minimize scope.)
 - Do you want the PM2 schedule expressions to be editable only in `ecosystem.config.cjs` (pure PM2 source of truth), or should we keep the env config keys (`INGEST_CRON_SCHEDULE`, `PUBLISHING_CRON_SCHEDULE`) purely for logging parity (set by PM2 env and matched to `cron_restart`)?
 
+## Completed
+- Date completed: 2026-01-14
+- Deviations:
+  - Adopted `exec_mode: "fork"`, `instances: 1`, and `time: true` in `ecosystem.config.cjs`.
+  - Intentionally did **not** enable `max_memory_restart`, because it can trigger unscheduled restarts and therefore extra cron executions (behavior change).
+- Follow-ups:
+  - None.
