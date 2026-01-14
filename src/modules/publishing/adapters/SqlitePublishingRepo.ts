@@ -2,12 +2,25 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
+import type { DigestDto } from "../dto/DigestDto";
+import type { DigestReadPort } from "../ports/DigestReadPort";
 import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
 import type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 
 type DbNewsItemRow = {
   readonly id: number;
   readonly raw_text: string;
+};
+
+type DbDigestRow = {
+  readonly id: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly digest_text: string;
+  readonly is_published: 0 | 1;
+  readonly source_item_ids_json: string;
+  readonly llm_model: string | null;
+  readonly published_at: string | null;
 };
 
 type TableInfoRow = {
@@ -25,7 +38,7 @@ type TableInfoRow = {
  * Schema strategy:
  * - This repo follows the project pattern: schema is ensured/extended on initialization.
  */
-export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepositoryPort {
+export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepositoryPort, DigestReadPort {
   private readonly db: Database.Database;
   private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
@@ -68,6 +81,36 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
 
     // Return JSON strings so the orchestrator can deterministically recover `id` for traceability.
     return rows.map((r) => JSON.stringify({ id: r.id, rawText: r.raw_text }));
+  }
+
+  /**
+   * Returns digests ordered by newest first.
+   *
+   * Security note:
+   * This method MUST NOT return the following columns:
+   * - `source_items_count`
+   * - `source_news_texts_json`
+   * - `publisher_external_id`
+   */
+  public async listDigests(): Promise<ReadonlyArray<DigestDto>> {
+    const stmt = this.db.prepare<unknown[], DbDigestRow>(
+      `
+      SELECT
+        id,
+        created_at,
+        updated_at,
+        digest_text,
+        is_published,
+        source_item_ids_json,
+        llm_model,
+        published_at
+      FROM digests
+      ORDER BY id DESC
+      `.trim(),
+    );
+
+    const rows = stmt.all();
+    return rows;
   }
 
   public async createPendingDigest(input: {

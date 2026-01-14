@@ -1,3 +1,5 @@
+import type { NewsItemDto } from "../dto/NewsItemDto";
+
 /**
  * Persistence port for storing and querying ingested news items.
  *
@@ -22,6 +24,17 @@ export interface NewsItemsRepositoryPort {
    * - not attempt to decide which items "should" be stored (that is use-case logic)
    */
   insertMany(items: ReadonlyArray<NewNewsItemToStore>): Promise<InsertManyResult>;
+
+  /**
+   * Returns news items for the requested ids.
+   *
+   * Constraints:
+   * - Implementations must not return `hash` or `payload_json`.
+   * - The returned row order is adapter-defined; callers must not rely on it.
+   *
+   * @param ids - News item ids to fetch.
+   */
+  findByIds(ids: ReadonlyArray<number>): Promise<ReadonlyArray<NewsItemDto>>;
 }
 
 /**

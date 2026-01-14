@@ -1,6 +1,8 @@
 export { NewsIngestOrch } from "../application/NewsIngestOrch";
+export { GetNewsItemsByIdsOrchestrator } from "../application/GetNewsItemsByIdsOrchestrator";
 
 export type { NewsIngestResult } from "../dto/NewsIngestResult";
+export type { NewsItemDto } from "../dto/NewsItemDto";
 export type { ScrapedNewsItem } from "../dto/ScrapedNewsItem";
 
 export type { NewsScraperPort } from "../ports/NewsScraperPort";

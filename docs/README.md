@@ -5,6 +5,7 @@
 1. [Overview](./Overview.md)
 2. [Architecture](./Architecture.md)
 3. [Ingestion](./ingestion/README.md)
+4. [API](./api/README.md)
 
 ## Structure
 

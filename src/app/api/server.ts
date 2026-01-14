@@ -1,6 +1,8 @@
 import express from "express";
 import { buildContainer } from "../di/container";
+import { digestsRoute } from "./routes/digestsRoute";
 import { healthRoute } from "./routes/healthRoute";
+import { newsItemsRoute } from "./routes/newsItemsRoute";
 
 /**
  * API entry-point.
@@ -20,6 +22,8 @@ async function main(): Promise<void> {
   app.use(express.json());
 
   app.use(healthRoute(container));
+  app.use(digestsRoute(container));
+  app.use(newsItemsRoute(container));
 
   const port = Number(process.env.PORT ?? 3000);
 
