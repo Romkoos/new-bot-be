@@ -38,6 +38,7 @@ describe("NewsIngestOrch", () => {
     const repository: NewsItemsRepositoryPort = {
       findExistingHashes: vi.fn(async () => new Set<string>()),
       insertMany: vi.fn(async (_items: ReadonlyArray<NewNewsItemToStore>) => ({ insertedCount: 0 } satisfies InsertManyResult)),
+      findByIds: vi.fn(async () => []),
     };
 
     const logger = createTestLogger();
@@ -73,6 +74,7 @@ describe("NewsIngestOrch", () => {
     const repository: NewsItemsRepositoryPort = {
       findExistingHashes: vi.fn(async (hashes: ReadonlyArray<string>) => new Set<string>(hashes)), // everything exists
       insertMany: vi.fn(async (_items) => ({ insertedCount: 0 })),
+      findByIds: vi.fn(async () => []),
     };
 
     const logger = createTestLogger();
@@ -114,6 +116,7 @@ describe("NewsIngestOrch", () => {
     const repository: NewsItemsRepositoryPort = {
       findExistingHashes: vi.fn(async () => new Set<string>(["h:X"])), // only Y is new
       insertMany: vi.fn(async (_items) => ({ insertedCount: 123 })),
+      findByIds: vi.fn(async () => []),
     };
 
     const logger = createTestLogger();
