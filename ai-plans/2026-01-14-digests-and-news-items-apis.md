@@ -63,7 +63,7 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
     - Instantiate `GetNewsItemsByIdsOrchestrator` with `SqliteNewsRepo`.
     - Expose new orchestrators on the `AppContainer` type.
 
-- [ ] Step 4: API routes
+- [x] Step 4: API routes
   - Add `src/app/api/routes/digestsRoute.ts`
     - `GET /digests` → `container.publishing.listDigests.run()` (or similar) → JSON array.
   - Add `src/app/api/routes/newsItemsRoute.ts`
