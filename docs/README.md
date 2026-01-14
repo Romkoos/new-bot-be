@@ -16,7 +16,7 @@
 - [Modules index](./modules/README.md)
 - [`health`](./modules/health.md)
 - [`news-ingestion`](./modules/news-ingestion.md)
-- [`content-preparation`](./modules/content-preparation.md)
+- [`publishing`](./modules/publishing.md)
 
 ### Ingestion (topic)
 - [Ingestion topic index](./ingestion/README.md)

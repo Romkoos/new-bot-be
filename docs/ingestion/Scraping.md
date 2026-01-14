@@ -172,10 +172,10 @@ If you run ingestion on a server with a different timezone than Israel, “today
 
 This is mitigated by the resolver being timezone-aware and by using the shared timestamp formatter for consistent output.
 
-For debugging, the scraper emits logs:
+For debugging, the scraper emits minimal logs:
 
-- `scraper:mako:extracted` (timeTexts, empty counts)
-- `scraper:mako:publishedAt:resolved` (`timeText` → `publishedAt`)
+- `scraper:mako:extracted` (counts only)
+- `scraper:mako:publishedAt:summary` (how many items resolved vs null)
 
 ## Outputs and constraints
 

@@ -1,0 +1,136 @@
+# Module: `publishing`
+
+## Purpose / scope
+
+The `publishing` module owns the use-case of turning **unprocessed** ingested news items into a **single digest**, publishing it to an external destination, and tracking publish status.
+
+In the current implementation:
+- input is read from SQLite table `news_items`
+- a digest is generated via an LLM adapter (Gemini)
+- the digest is published via a publisher adapter (Telegram)
+- the resulting digest is stored in SQLite table `digests` and marked as published on success
+
+## Where it lives
+
+- Module root: `src/modules/publishing/`
+- Public API: `src/modules/publishing/public/index.ts`
+
+## Ownership
+
+The module owns one orchestrator:
+
+- `PublishDigestOrchestrator`
+
+## Public API (`src/modules/publishing/public/index.ts`)
+
+Exports (contracts only):
+
+- Orchestrator:
+  - `PublishDigestOrchestrator`
+- DTOs:
+  - `PublishDigestResult`
+- Ports:
+  - `NewsSelectionPort`
+  - `TextGenerationPort`
+  - `MarkdownPublisherPort`
+  - `DigestRepositoryPort`
+
+Adapters are intentionally not exported. They are instantiated in DI.
+
+## Orchestrator: `PublishDigestOrchestrator`
+
+File:
+
+- `src/modules/publishing/application/PublishDigestOrchestrator.ts`
+
+### Responsibility (flow owner)
+
+This orchestrator owns the full use-case ordering:
+
+1. Select rows from `news_items` where `processed = 0` (`ORDER BY id ASC`).
+2. Generate a digest using `TextGenerationPort` with a predefined prompt.
+3. Normalize the digest text minimally and deterministically.
+4. Persist a pending digest to `digests` and mark selected `news_items` as processed (atomic).
+5. Publish the digest using `MarkdownPublisherPort`.
+6. Mark the digest as published (`is_published = 1`) only after the publisher succeeds.
+
+### Logs
+
+- `publishing:digest:start`
+- `publishing:digest:early-exit:no-unprocessed-items`
+- `publishing:digest:done`
+
+## Ports
+
+### `NewsSelectionPort`
+
+Returns **strings** (not objects). The SQLite adapter returns JSON strings for deterministic traceability:
+
+```json
+{ "id": 123, "rawText": "..." }
+```
+
+### `TextGenerationPort`
+
+Provider-agnostic interface for generating text from a prompt. The concrete Gemini adapter is a module-internal implementation.
+
+### `MarkdownPublisherPort`
+
+Provider-agnostic interface for publishing Markdown text. The concrete Telegram adapter is a module-internal implementation.
+
+### `DigestRepositoryPort`
+
+Persists digests and tracks publish state (`is_published`).
+
+## Storage
+
+### `digests`
+
+The module stores digests in a dedicated SQLite table:
+
+- `digests`
+
+Key fields:
+- `digest_text` — the Markdown digest body.
+- `is_published` — publish status flag (0/1).
+- `source_item_ids_json` — traceability back to the source `news_items`.
+- `source_news_texts_json` — exact prompt inputs used (debuggability).
+
+Source rows are tracked via:
+
+- `news_items.processed` (0/1)
+
+## Runtime integration
+
+### DI wiring
+
+File:
+
+- `src/app/di/container.ts`
+
+Exposed as:
+
+- `container.publishing.publishDigest`
+
+### CLI entry point
+
+File:
+
+- `src/app/cli/publishDigestCli.ts`
+
+Behavior:
+
+- loads `.env` and `.env.local` if present
+- calls the orchestrator once and exits explicitly
+
+## Environment variables
+
+The publishing flow requires:
+
+- `GEMINI_API_KEY`
+- `PUBLISHING_LLM_MODEL` (optional; defaults inside the Gemini adapter)
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `TELEGRAM_PARSE_MODE` (recommended: `MarkdownV2`)
+- `TELEGRAM_DISABLE_PREVIEW`
+
