@@ -44,14 +44,14 @@ Adjust the project so cron-like jobs can be run **manually from the console** (C
   - Delete boot-sequence entry point + PM2 gate helpers.
   - Delete `news-pipeline` module and its public exports.
   - Remove `newsPipeline.bootSequence` wiring from DI container.
-- [ ] Step 2: Remove cron health process
+- [x] Step 2: Remove cron health process
   - Delete `src/app/cron/healthCron.ts`.
   - Remove any references (PM2 app, scripts, docs).
-- [ ] Step 2b: Remove health module + HTTP health endpoint
+- [x] Step 2b: Remove health module + HTTP health endpoint
   - Delete `src/modules/health/**`.
   - Remove `healthRoute` and any health route registration from the API server.
   - Remove health wiring from the DI container.
-- [ ] Step 3: Keep ingest/publish as separate one-shot jobs
+- [x] Step 3: Keep ingest/publish as separate one-shot jobs
   - Convert `src/app/cron/newsIngestCron.ts` and `src/app/cron/publishingCron.ts` into **one-shot** scripts (run once and `process.exit`).
   - Remove PM2-specific behavior (`keepAlive`, run gate).
 - [ ] Step 4: Remove PM2 cron scheduling config + scripts (if no longer used)
