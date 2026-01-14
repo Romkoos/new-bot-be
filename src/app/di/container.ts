@@ -11,6 +11,7 @@ import { TelegramMarkdownV2DigestPostAssembler } from "../../modules/publishing/
 import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
 import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
+import { BootSequenceOrchestrator } from "../../modules/news-pipeline/public";
 
 /**
  * Application DI container.
@@ -31,6 +32,9 @@ export interface AppContainer {
   readonly publishing: {
     readonly publishDigest: PublishDigestOrchestrator;
     readonly listDigests: ListDigestsOrchestrator;
+  };
+  readonly newsPipeline: {
+    readonly bootSequence: BootSequenceOrchestrator;
   };
 }
 
@@ -88,6 +92,13 @@ export function buildContainer(): AppContainer {
   });
   const listDigests = new ListDigestsOrchestrator(publishingRepo);
 
+  // News pipeline module wiring
+  const bootSequence = new BootSequenceOrchestrator({
+    health: getHealthStatusOrchestrator,
+    ingest: news,
+    publishDigest,
+  });
+
   return {
     logger,
     health: {
@@ -100,6 +111,9 @@ export function buildContainer(): AppContainer {
     publishing: {
       publishDigest,
       listDigests,
+    },
+    newsPipeline: {
+      bootSequence,
     },
   };
 }

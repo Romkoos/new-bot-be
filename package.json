@@ -19,6 +19,7 @@
     "pm2:delete": "pm2 delete ecosystem.config.js",
     "pm2:list": "pm2 list",
     "pm2:logs": "pm2 logs",
+    "pm2:logs:cron": "pm2 logs cron:boot-sequence cron:health cron:news:ingest cron:publishing:digest",
     "pm2:save": "pm2 save",
     "pm2:flush": "pm2 flush",
     "start": "node dist/app/api/server.js",
