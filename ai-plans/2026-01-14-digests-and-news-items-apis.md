@@ -85,9 +85,13 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
     - ordering contract for ids
     - nulls for missing ids (if we choose that contract)
 
-- [ ] Step 6: Documentation
+- [x] Step 6: Documentation
   - Add `docs/api/README.md` describing the new endpoints (request/response shapes + examples).
   - Update `docs/README.md` to link the new API doc.
+
+## Completed
+- Date completed: 2026-01-14
+- Deviations: None.
 
 ## Files to Modify/Create
 - `src/modules/publishing/ports/DigestReadPort.ts` - new read port
