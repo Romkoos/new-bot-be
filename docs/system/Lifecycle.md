@@ -22,6 +22,7 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 
 - Health cron: `src/app/cron/healthCron.ts`
 - Ingestion cron: `src/app/cron/newsIngestCron.ts`
+- Boot sequence (health → ingestion → publishing on PM2 start): `src/app/cron/bootSequence.ts`
 
 ### CLI entry point
 
@@ -83,6 +84,19 @@ Cron entry points are long-running processes.
 4. Cron runs its job once on process start and then stays alive (idle) until terminated.
 5. PM2 restarts the process on a schedule (via `cron_restart`), and each restart triggers one run.
 
+### Boot-time ordering
+
+On PM2 start/restart, the system runs a one-time sequence to ensure deterministic startup ordering:
+
+**health → ingest → publishing**
+
+This is implemented by:
+
+- `src/app/cron/bootSequence.ts` (runs the sequence once and exits)
+- `ecosystem.config.cjs`:
+  - `cron:boot-sequence` starts immediately
+  - other cron apps use `autostart: false` to avoid parallel first runs
+
 ### Runtime ticks
 
 On each PM2 scheduled restart:
@@ -100,7 +114,7 @@ Cron processes keep running until terminated. There is no automatic shutdown.
 PM2 is the single source of truth for **when** cron jobs run.
 
 - The cron schedule is defined in `ecosystem.config.cjs` via `cron_restart`.
-- PM2’s `cron_restart` requires the process to be running to receive scheduled restarts.
+- Cron jobs are managed by PM2 processes; schedules are not implemented inside the Node.js runtime.
 
 If you need:
 
