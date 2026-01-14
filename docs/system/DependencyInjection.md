@@ -17,8 +17,8 @@ Composition root:
 
 Module Public APIs:
 
-- `src/modules/health/public/index.ts`
 - `src/modules/news-ingestion/public/index.ts`
+- `src/modules/publishing/public/index.ts`
 
 ## DI principles in this repo
 
@@ -74,25 +74,12 @@ Why:
 
 `AppContainer` exposes orchestrators (not adapters) to entry points:
 
-- `health.getHealthStatusOrchestrator`
 - `ingest.news` (ingestion orchestrator)
+- `publishing.publishDigest` (publishing orchestrator)
 
 It also exposes a shared logger:
 
 - `logger` from `src/shared/observability/logger.ts`
-
-## Wiring: Health module
-
-Health is a small example of hexagonal wiring:
-
-- Port: `TimePort`
-- Adapter: `SystemTimeAdapter`
-- Orchestrator: `GetHealthStatusOrchestrator`
-
-In the container:
-
-1. Create time adapter (via helper from module public API).
-2. Construct orchestrator with the port implementation.
 
 ## Wiring: Ingestion module (`news-ingestion`)
 
@@ -106,7 +93,7 @@ The ingestion module owns its env contract:
 
 This returns:
 
-- `cronSchedule` (used by cron entry point)
+- `cronSchedule` (used by the ingestion job entry point for logging/context)
 - `scraper` config (used by DI to instantiate `PwMakoScraper`)
 
 The app layer does not hardcode `INGEST_*` env names; it consumes module config.

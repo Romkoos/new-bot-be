@@ -5,9 +5,9 @@ A Node.js + TypeScript backend skeleton that demonstrates a strict architecture:
 - Modular monolith (`src/modules/*`)
 - Use-case orchestrators (`src/modules/*/application`)
 - Hexagonal architecture inside modules (Ports & Adapters)
-- Express REST API and node-cron as entry-points (`src/app/*`)
+- Express REST API and one-shot job/CLI entry points (`src/app/*`)
 - Dependency wiring only in the composition root (`src/app/di`)
-- No business logic in API or Cron
+- No business logic in API or entry points
 
 ## Docs (start here)
 
@@ -30,42 +30,29 @@ npm install
 npm run dev
 ```
 
-- Route: `GET /health`
+- Routes: see `src/app/api/routes/*`
 - Port: defaults to `3000` (override with `PORT`)
 
-## Run (Cron)
+## Run (Jobs)
 
 ```bash
-npm run dev:cron
+npm run job:ingest
+npm run job:publish
 ```
 
-This logs the health status every minute using the same orchestrator wiring as the API.
+These jobs run **once per invocation** and exit with a non-zero status code on failure (so you can run them from any external scheduler).
 
-## Run (Mako Channel 12 ingestion)
-
-### Manual (CLI)
+## Run (Ingestion CLI)
 
 ```bash
-npm run dev:cli:mako
+npm run cli:ingest
 ```
 
 Dry-run (no DB writes):
 
 ```bash
-npm run dev:cli:mako:dry-run
+npm run cli:ingest:dry-run
 ```
-
-### Scheduled (Cron)
-
-```bash
-npm run dev:cron:mako
-```
-
-Configuration:
-- `MAKO_CRON_SCHEDULE` (default: `*/5 * * * *`)
-- `NEWS_BOT_SQLITE_PATH` (default: `./data/news-bot.sqlite`)
-- `MAKO_SCRAPER_HEADLESS` (default: `true`, set to `false` to see the browser UI)
-- `MAKO_SCRAPER_SLOWMO_MS` (optional, e.g. `200` for slower visible steps)
 
 Playwright browser binaries are required (install once):
 
@@ -85,17 +72,10 @@ npm test
 npm run build
 npm run start
 ```
-
-Cron in production build:
-
-```bash
-npm run build
-npm run start:cron
-```
-
-Mako ingestion in production build:
+Jobs in production build:
 
 ```bash
 npm run build
-npm run start:cron:mako
+npm run start:job:ingest
+npm run start:job:publish
 ```

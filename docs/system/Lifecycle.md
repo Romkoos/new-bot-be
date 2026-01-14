@@ -16,13 +16,16 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 ### API entry point
 
 - `src/app/api/server.ts`
-- Example route: `src/app/api/routes/healthRoute.ts`
+- Example routes:
+  - `src/app/api/routes/digestsRoute.ts`
+  - `src/app/api/routes/newsItemsRoute.ts`
 
 ### Cron entry points
 
-- Health cron: `src/app/cron/healthCron.ts`
-- Ingestion cron: `src/app/cron/newsIngestCron.ts`
-- Boot sequence (health → ingestion → publishing on PM2 start): `src/app/cron/bootSequence.ts`
+The repo contains one-shot job entry points under `src/app/cron/` (they do not self-schedule):
+
+- Ingestion job: `src/app/cron/newsIngestCron.ts`
+- Publishing job: `src/app/cron/publishingCron.ts`
 
 ### CLI entry point
 
@@ -34,9 +37,8 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 
 ### Orchestrators (use-case owners)
 
-- Health: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
 - Ingestion: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
-- Boot-time ordering: `src/modules/news-pipeline/application/BootSequenceOrchestrator.ts`
+- Publishing: `src/modules/publishing/application/PublishDigestOrchestrator.ts`
 
 ## Lifecycle stages (high level)
 
@@ -60,7 +62,7 @@ The key invariant:
 
 ### Request handling
 
-For each incoming request (example: `GET /health`):
+For each incoming request (example: `GET /digests`):
 
 1. Route handler validates/parses input (minimal).
 2. Handler calls exactly one orchestrator instance from the container.
@@ -75,48 +77,28 @@ This repo’s entry point is minimal; if you add graceful shutdown, it belongs i
 
 ## Cron process lifecycle
 
-Cron entry points are long-running processes.
+Job entry points are short-lived processes (one run per invocation).
 
 ### Startup
 
 1. Node process starts the cron entry point.
 2. Cron builds the DI container once via `buildContainer()`.
-3. Cron does **not** schedule itself. Scheduling is owned by **PM2**.
-4. Cron stays alive (idle) until terminated.
-5. Cron runs its job once per PM2 restart (including `cron_restart`). On the initial PM2 start, cron entry points skip running to avoid parallel boot-time execution.
-
-### Boot-time ordering
-
-On PM2 start/restart, the system runs a one-time sequence to ensure deterministic startup ordering:
-
-**health → ingest → publishing**
-
-This is implemented by:
-
-- `src/modules/news-pipeline/application/BootSequenceOrchestrator.ts` (owns ordering)
-- `src/app/cron/bootSequence.ts` (entry point that runs the orchestrator once and exits)
-- `src/app/cron/pm2RunGate.ts` (prevents individual cron apps from running their jobs on the initial PM2 start)
-- `src/app/cron/pm2BootStamp.ts` (writes a short-lived stamp under `PM2_HOME` so the run-gate works on Windows where `pm2_env` is not injected)
-- `ecosystem.config.cjs` (`cron:boot-sequence` is started immediately by PM2)
-
-### Runtime ticks
-
-On each PM2 scheduled restart:
-
-1. Cron logs the run start.
-2. Cron calls exactly one orchestrator per scheduled job.
-3. Cron logs done (including counts/duration) or logs error.
+3. The job calls exactly one orchestrator instance.
+4. The job logs done (including counts/duration) or logs error.
+5. The process exits (0 on success, non-zero on failure).
 
 ### Shutdown
 
-Cron processes keep running until terminated. There is no automatic shutdown.
+Job processes exit after completing one run.
 
 ### Scheduling source of truth
 
-PM2 is the single source of truth for **when** cron jobs run.
+This repo does not schedule jobs in-process.
 
-- The cron schedule is defined in `ecosystem.config.cjs` via `cron_restart`.
-- Cron jobs are managed by PM2 processes; schedules are not implemented inside the Node.js runtime.
+If you need scheduling/retries/alerting, use an external scheduler (Task Scheduler / systemd / Kubernetes CronJob / CI runner) and invoke:
+
+- `node dist/app/cron/newsIngestCron.js`
+- `node dist/app/cron/publishingCron.js`
 
 If you need:
 

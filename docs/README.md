@@ -15,7 +15,6 @@
 
 ### Modules
 - [Modules index](./modules/README.md)
-- [`health`](./modules/health.md)
 - [`news-ingestion`](./modules/news-ingestion.md)
 - [`publishing`](./modules/publishing.md)
 

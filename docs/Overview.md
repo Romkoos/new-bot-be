@@ -5,22 +5,19 @@
 This repository demonstrates a **Node.js + TypeScript backend** using a **Modular Monolith** architecture with:
 - **Use-case Orchestrators**
 - **Hexagonal architecture** (Ports & Adapters) inside modules
-- **REST API** and **Cron** as entry-points
+- **REST API** and **Job/CLI** entry-points
 - **Dependency wiring only in the composition root**
-- **No business logic in API or Cron**
+- **No business logic in API or entry points**
 
-The demo module is `health`, whose use-case returns:
-
-```json
-{ "status": "ok", "time": "<ISO string>" }
-```
+This repo focuses on ingestion + publishing flows and keeps entry points thin.
 
 ## Where it lives (entry-points, composition root, modules)
 
 ### Entry-points (infrastructure only)
 
 - `src/app/api/` — REST API entry-point(s)
-- `src/app/cron/` — Cron entry-point(s)
+- `src/app/cron/` — one-shot job entry-point(s)
+- `src/app/cli/` — CLI entry-point(s)
 
 **Rule:** entry-points may only call orchestrators (via module Public APIs) and must not contain business logic.
 
@@ -62,75 +59,39 @@ The demo module is `health`, whose use-case returns:
 Other layers must not import internal module files directly.
 
 Allowed:
-- `import { GetHealthStatusOrchestrator } from "../../modules/health/public";`
+- `import { NewsIngestOrch } from "../../modules/news-ingestion/public";`
 
 Forbidden:
-- `import { SystemTimeAdapter } from "../../modules/health/adapters/SystemTimeAdapter";`
+- deep imports into module internals (e.g. `.../adapters/*`, `.../application/*`)
 
 ## Runtime flow (REST API)
 
 ### Request
 
-- `GET /health`
+- `GET /digests`
 
 ### Step-by-step
 
 1. `src/app/api/server.ts` starts Express and builds the container via `buildContainer()`.
-2. `src/app/api/routes/healthRoute.ts` handles `GET /health`.
+2. A route handler (e.g. `src/app/api/routes/digestsRoute.ts`) calls an orchestrator from the container.
 3. The handler calls **only** the orchestrator instance from the container.
 4. The orchestrator returns a DTO which is serialized to JSON.
 
-High-signal excerpt:
+High-signal excerpt (route calls orchestrator only):
 
 ```ts
-// src/app/api/routes/healthRoute.ts
-const result = container.health.getHealthStatusOrchestrator.run();
+// Example: src/app/api/routes/digestsRoute.ts
+const result = await container.publishing.listDigests.run();
 res.json(result);
 ```
 
-## Runtime flow (Cron)
-
-### Schedule
-
-- Every minute (`* * * * *`)
+## Runtime flow (Job)
 
 ### Step-by-step
 
-1. `src/app/cron/healthCron.ts` builds the container once via `buildContainer()`.
-2. The scheduled job calls **only** the orchestrator instance and logs the DTO.
-
-High-signal excerpt:
-
-```ts
-// src/app/cron/healthCron.ts
-const result = container.health.getHealthStatusOrchestrator.run();
-container.logger.info("cron:health", result);
-```
-
-## Demo module: `health`
-
-### Use-case
-
-Return `{ status: "ok", time: "<ISO string>" }`.
-
-### Implementation map
-
-- Port: `src/modules/health/ports/TimePort.ts`
-- Adapter: `src/modules/health/adapters/SystemTimeAdapter.ts`
-- Orchestrator: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
-- DTO: `src/modules/health/dto/GetHealthStatusResponse.ts`
-- Public API: `src/modules/health/public/index.ts`
-
-### Contract
-
-The orchestrator returns `GetHealthStatusResponse`:
-
-```ts
-export interface GetHealthStatusResponse {
-  status: "ok";
-  time: string;
-}
-```
+1. A one-shot job entry point (e.g. `src/app/cron/newsIngestCron.ts`) loads env (if needed) and builds the container via `buildContainer()`.
+2. It calls **exactly one** orchestrator and logs start/done/error.
+3. It exits (0 on success, non-zero on failure).
 
 ## Extension points
 

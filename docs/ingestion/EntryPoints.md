@@ -1,10 +1,10 @@
-# Ingestion entry points (Cron + CLI participation)
+# Ingestion entry points (Job + CLI participation)
 
 ## Purpose / scope
 
 This document explains how ingestion participates in the system runtime via:
 
-- Cron scheduler (`node-cron`)
+- One-shot job entry point (manual or external scheduler)
 - CLI manual trigger
 
 It focuses on lifecycle and responsibilities:
@@ -35,52 +35,42 @@ Entry points must **not**:
 - query or write SQLite directly
 - coordinate multiple steps or multiple modules in sequence
 
-## Cron: `newsIngestCron.ts`
+## Job: `newsIngestCron.ts`
 
 ### Purpose
 
-Run ingestion repeatedly on a schedule.
+Run ingestion once per invocation.
 
 ### Schedule configuration
 
-Cron reads the schedule string from the module config (for logging/context):
+The job reads the schedule string from the module config (for logging/context):
 
 - `readIngestionConfig(process.env).cronSchedule`
 
 Default value is set in the module config helper:
 
-- `*/5 * * * *` (every 5 minutes)
+- `*/5 * * * *` (recommended external scheduler cadence)
 
-PM2 is responsible for scheduling:
-
-- `ecosystem.config.cjs` defines the schedule via `cron_restart`.
-- The cron process does **not** schedule itself in-process.
+This repo does **not** schedule jobs in-process. If you need scheduling, use an external scheduler (Task Scheduler / systemd / Kubernetes CronJob / CI runner) to invoke the job process.
 
 ### Lifecycle
 
 1. Process starts
-2. Cron entry point builds DI container once via `buildContainer()`
-3. It logs that the scheduler started (with `{ schedule }`)
+2. Job entry point builds DI container once via `buildContainer()`
 4. It runs the orchestrator once with `dryRun: false`
-5. It stays alive (idle) until terminated
-6. PM2 restarts the process on schedule; each restart triggers one run
+5. It terminates the process
 
 ### What Cron logs
 
 It emits:
 
-- `Cron scheduler started (news ingestion).` with `{ schedule }` once on startup
-- For each run:
-  - `cron:news:ingestion:start` with `{ schedule }`
-  - `cron:news:ingestion:done` with `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
-  - `cron:news:ingestion:error` with `{ durationMs, error }` on failure
+- `cron:news:ingestion:start` with `{ schedule }`
+- `cron:news:ingestion:done` with `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
+- `cron:news:ingestion:error` with `{ durationMs, error }` on failure
 
 ### Error behavior
 
-Cron does not crash the process on an ingestion failure:
-
-- errors are logged
-- subsequent scheduled runs still happen (PM2 restarts on schedule)
+The job exits non-zero on failure (so external schedulers can alert/retry as needed).
 
 If you need retries/backoff, that is an **infrastructure concern** that belongs in the cron entry point (or a wrapper around it), but the use-case flow ordering must remain in the orchestrator.
 
