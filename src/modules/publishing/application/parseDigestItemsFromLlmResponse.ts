@@ -22,13 +22,13 @@ export function parseDigestItemsFromLlmResponse(raw: string): ReadonlyArray<stri
 
   // 1) Try JSON directly.
   const jsonDirect = tryParseJsonStringArray(trimmed);
-  if (jsonDirect) return jsonDirect;
+  if (jsonDirect !== null) return jsonDirect;
 
   // 2) Try code-fenced JSON.
   const unfenced = stripSingleMarkdownCodeFence(trimmed);
   if (unfenced !== null) {
     const jsonUnfenced = tryParseJsonStringArray(unfenced);
-    if (jsonUnfenced) return jsonUnfenced;
+    if (jsonUnfenced !== null) return jsonUnfenced;
   }
 
   // 3) Try strict Markdown bullet list (all non-empty lines must match bullet pattern).
@@ -56,7 +56,7 @@ function tryParseJsonStringArray(source: string): ReadonlyArray<string> | null {
     items.push(t);
   }
 
-  if (items.length === 0) return null;
+  // Empty array is valid and intentional (LLM may decide nothing is worth publishing).
   return items;
 }
 

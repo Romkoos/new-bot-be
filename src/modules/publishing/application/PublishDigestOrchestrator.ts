@@ -83,6 +83,21 @@ export class PublishDigestOrchestrator {
       ...(generated.model ? { llmModel: generated.model } : {}),
     });
 
+    if (digestItems.length === 0) {
+      const durationMs = Date.now() - startedAt;
+      this.logger.info("publishing:digest:early-exit:no-digest-items", {
+        selectedNewsCount: selectionStrings.length,
+        digestId: persisted.digestId,
+        durationMs,
+      });
+      return {
+        selectedNewsCount: selectionStrings.length,
+        digestId: persisted.digestId,
+        isPublished: false,
+        durationMs,
+      };
+    }
+
     const published = await this.publisher.publishMarkdown({ text: postText });
 
     await this.digestRepository.markDigestPublished({
@@ -141,24 +156,75 @@ function parseSelectedNewsItemString(value: string): SelectedNewsItem {
 function buildDigestPrompt(newsTexts: ReadonlyArray<string>): string {
   // Keep prompt assembly deterministic for debuggability and test stability.
   const header =
-    "You are a news editor.\n" +
-    "Your task is to filter news by their level of interest and write professional digests.\n" +
+    "You are a professional news editor and curator.\n" +
+    "Your task is to STRICTLY filter, normalize, group, and summarize news items.\n" +
     "\n" +
-    "Your writing style should target a young audience. Do not use profanity, but you may use slang where appropriate. In news of a tragic nature, slang is likely inappropriate.\n" +
+    "Your target audience is young adults.\n" +
+    "Writing style: clear, concise, professional.\n" +
+    "Do NOT use profanity.\n" +
+    "Slang is allowed ONLY if it does not reduce clarity or seriousness.\n" +
+    "In tragic, violent, or sensitive news, slang is STRICTLY FORBIDDEN.\n" +
     "\n" +
-    "Below is an array of strings in Hebrew. Each string represents a news item. You should:\n" +
+    "Below is an array of strings in Hebrew.\n" +
+    "Each string MAY represent a news item, noise, metadata, or irrelevant text.\n" +
     "\n" +
-    "IMPORTANT: translate these news items into Russian;\n" +
+    "YOU MUST FOLLOW ALL RULES BELOW EXACTLY.\n" +
     "\n" +
-    "filter out entries that do not contain actual news content;\n" +
+    "STEP 1 — TRANSLATION:\n" +
+    "- Translate ALL candidate news items from Hebrew into Russian.\n" +
+    "- If a string cannot be clearly translated into meaningful Russian news content, DISCARD it.\n" +
     "\n" +
-    "filter out uninteresting or completely trivial news, such as \"a 36-year-old man fell off a scooter\";\n" +
+    "STEP 2 — HARD FILTERING (MANDATORY):\n" +
+    "IMMEDIATELY DISCARD an item if ANY of the following is true:\n" +
+    "- It does NOT describe a real-world event.\n" +
+    "- It contains no clear subject, action, and outcome.\n" +
+    "- It is a fragment, headline without context, clickbait stub, or metadata.\n" +
+    "- It describes a single minor incident with no public, political, social, or economic relevance.\n" +
+    "- It is a trivial, everyday, or local event with no public significance.\n" +
+    "- Examples of MUST-BE-DISCARDED news:\n" +
+    "  * minor accidents with no consequences\n" +
+    "  * isolated everyday incidents.\n" +
+    "  * personal misfortune of a single non-public individual\n" +
+    "  * routine police reports without broader impact\n" +
     "\n" +
-    "compose a news digest consisting of a headline and one sentence;\n" +
+    "STEP 3 — INTEREST FILTERING (STRICT):\n" +
+    "KEEP an item ONLY if it has at least ONE of the following qualities:\n" +
+    "- affects a large group of people\n" +
+    "- involves public figures, government, military, economy, tech, culture, or major companies\n" +
+    "- has social, political, economic, or security implications\n" +
+    "- represents an unusual, non-routine event\n" +
     "\n" +
-    "Return ONLY a JSON array of strings.\n" +
-    "Each array element must be one digest item (one headline + one sentence).\n" +
-    "Do not include any extra text before or after the JSON.\n";
+    "STEP 4 — TOPIC GROUPING (MANDATORY):\n" +
+    "- Before writing the digest, analyze ALL remaining news items.\n" +
+    "- Group items by TOPIC if they clearly belong to the same theme.\n" +
+    "- Examples of valid grouping:\n" +
+    "  * several updates about one military conflict\n" +
+    "  * multiple political decisions within one country\n" +
+    "  * a sequence of events around one company or technology\n" +
+    "- If grouping is possible, YOU MUST merge them.\n" +
+    "- Do NOT create artificial groups.\n" +
+    "- If grouping is NOT logically possible, keep items separate.\n" +
+    "\n" +
+    "STEP 5 — DIGEST COMPOSITION:\n" +
+    "- Each digest item MUST consist of:\n" +
+    "  * ONE clear headline\n" +
+    "  * ONE concise explanatory sentence\n" +
+    "- If a digest item represents a GROUP of news:\n" +
+    "  * the headline MUST reflect the common theme\n" +
+    "  * the sentence MUST summarize the combined essence, not list events\n" +
+    "- Do NOT mention sources.\n" +
+    "- Do NOT add opinions.\n" +
+    "- Do NOT add assumptions or speculation.\n" +
+    "\n" +
+    "OUTPUT RULES (ABSOLUTE):\n" +
+    "- Return ONLY a JSON array of strings.\n" +
+    "- Each array element = ONE digest item (headline + one sentence).\n" +
+    "- NO extra text.\n" +
+    "- NO explanations.\n" +
+    "- NO markdown.\n" +
+    "- NO comments.\n" +
+    "- If no valid news remains, return an EMPTY JSON array: [].\n";
+
 
   return `${header}\n${JSON.stringify(newsTexts)}`;
 }

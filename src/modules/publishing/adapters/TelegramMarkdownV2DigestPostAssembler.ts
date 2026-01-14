@@ -30,6 +30,9 @@ export class TelegramMarkdownV2DigestPostAssembler implements DigestPostAssemble
     const footer = buildFooter();
 
     // Keep formatting stable and predictable for debugging.
+    if (items.length === 0) {
+      return `${header}\n\n${footer}`.trim();
+    }
     return `${header}\n\n${items.join("\n")}\n\n${footer}`.trim();
   }
 }

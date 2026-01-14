@@ -8,3 +8,5 @@ export type { TextGenerationPort } from "../ports/TextGenerationPort";
 
 export { PublishDigestOrchestrator } from "../application/PublishDigestOrchestrator";
 
+export { PUBLISH_ENV, readPublishingConfig } from "./publishingEnv";
+export type { PublishingRuntimeConfig } from "./publishingEnv";
