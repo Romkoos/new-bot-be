@@ -10,10 +10,10 @@ import type { AppContainer } from "../../di/container";
 export function digestsRoute(container: AppContainer): Router {
   const router = createRouter();
 
-  router.get("/digests", async (_req, res) => {
-    const digests = await container.publishing.listDigests.run();
-    res.json(digests);
-  });
+    router.get("/api/digests", async (_req, res) => {
+      const digests = await container.publishing.listDigests.run();
+      res.json(digests);
+    });
 
   return router;
 }
