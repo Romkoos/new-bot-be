@@ -36,6 +36,7 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 
 - Health: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
 - Ingestion: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
+- Boot-time ordering: `src/modules/news-pipeline/application/BootSequenceOrchestrator.ts`
 
 ## Lifecycle stages (high level)
 
@@ -81,8 +82,8 @@ Cron entry points are long-running processes.
 1. Node process starts the cron entry point.
 2. Cron builds the DI container once via `buildContainer()`.
 3. Cron does **not** schedule itself. Scheduling is owned by **PM2**.
-4. Cron runs its job once on process start and then stays alive (idle) until terminated.
-5. PM2 restarts the process on a schedule (via `cron_restart`), and each restart triggers one run.
+4. Cron stays alive (idle) until terminated.
+5. Cron runs its job once per PM2 restart (including `cron_restart`). On the initial PM2 start, cron entry points skip running to avoid parallel boot-time execution.
 
 ### Boot-time ordering
 
@@ -92,10 +93,11 @@ On PM2 start/restart, the system runs a one-time sequence to ensure deterministi
 
 This is implemented by:
 
-- `src/app/cron/bootSequence.ts` (runs the sequence once and exits)
-- `ecosystem.config.cjs`:
-  - `cron:boot-sequence` starts immediately
-  - other cron apps use `autostart: false` to avoid parallel first runs
+- `src/modules/news-pipeline/application/BootSequenceOrchestrator.ts` (owns ordering)
+- `src/app/cron/bootSequence.ts` (entry point that runs the orchestrator once and exits)
+- `src/app/cron/pm2RunGate.ts` (prevents individual cron apps from running their jobs on the initial PM2 start)
+- `src/app/cron/pm2BootStamp.ts` (writes a short-lived stamp under `PM2_HOME` so the run-gate works on Windows where `pm2_env` is not injected)
+- `ecosystem.config.cjs` (`cron:boot-sequence` is started immediately by PM2)
 
 ### Runtime ticks
 

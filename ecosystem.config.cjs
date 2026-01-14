@@ -29,7 +29,6 @@ module.exports = {
       exec_mode: "fork",
       instances: 1,
       time: true,
-      autostart: false,
     },
     {
       name: "cron:news:ingest",
@@ -40,7 +39,6 @@ module.exports = {
       exec_mode: "fork",
       instances: 1,
       time: true,
-      autostart: false,
       env: {
         // Keep the log `{ schedule }` aligned with PM2 `cron_restart`.
         INGEST_CRON_SCHEDULE: "*/5 * * * *",
@@ -55,7 +53,6 @@ module.exports = {
       exec_mode: "fork",
       instances: 1,
       time: true,
-      autostart: false,
       env: {
         // Keep the log `{ schedule }` aligned with PM2 `cron_restart`.
         PUBLISHING_CRON_SCHEDULE: "0,30 * * * *",
