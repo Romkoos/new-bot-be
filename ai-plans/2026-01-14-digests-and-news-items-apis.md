@@ -77,7 +77,7 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
     - `app.use(digestsRoute(container));`
     - `app.use(newsItemsRoute(container));`
 
-- [ ] Step 5: Tests (lightweight unit tests)
+- [x] Step 5: Tests (lightweight unit tests)
   - Add orchestrator unit tests with fake ports:
     - `src/modules/publishing/tests/ListDigestsOrchestrator.test.ts`
     - `src/modules/news-ingestion/tests/GetNewsItemsByIdsOrchestrator.test.ts`
