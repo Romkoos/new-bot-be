@@ -1,4 +1,3 @@
-import { GetHealthStatusOrchestrator, createSystemTimePort } from "../../modules/health/public";
 import { GetNewsItemsByIdsOrchestrator, NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestion/public";
 import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";
 import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
@@ -21,9 +20,6 @@ import { createConsoleLogger } from "../../shared/observability/logger";
  */
 export interface AppContainer {
   readonly logger: ReturnType<typeof createConsoleLogger>;
-  readonly health: {
-    readonly getHealthStatusOrchestrator: GetHealthStatusOrchestrator;
-  };
   readonly ingest: {
     readonly news: NewsIngestOrch;
     readonly getNewsItemsByIds: GetNewsItemsByIdsOrchestrator;
@@ -42,10 +38,6 @@ export interface AppContainer {
 export function buildContainer(): AppContainer {
   const logger = createConsoleLogger();
   const timestampFormatter = new SystemUtcIsoTimestampFormatter();
-
-  // Health module wiring
-  const timePort = createSystemTimePort(timestampFormatter);
-  const getHealthStatusOrchestrator = new GetHealthStatusOrchestrator(timePort);
 
   // News ingestion module wiring
   // NOTE: Public APIs export only contracts (orchestrators/DTOs/port types). Adapters are instantiated here (composition root).
@@ -90,9 +82,6 @@ export function buildContainer(): AppContainer {
 
   return {
     logger,
-    health: {
-      getHealthStatusOrchestrator,
-    },
     ingest: {
       news,
       getNewsItemsByIds,

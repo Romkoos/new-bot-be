@@ -1,21 +1,22 @@
 import { buildContainer } from "../di/container";
 import { readIngestionConfig } from "../../modules/news-ingestion/public";
-import { shouldRunCronJobOnProcessStart } from "./pm2RunGate";
-import { keepProcessAlive } from "./keepAlive";
+import { loadEnvFiles } from "../config/loadEnv";
 
 /**
  * Cron entry-point for the news ingestion use-case.
  *
  * Responsibilities:
+ * - Load `.env` / `.env.local` (if present).
  * - Build the DI container once.
  * - Read schedule from configuration.
- * - Schedule a job that calls only the orchestrator.
+ * - Run the job once per invocation (manual execution).
  *
  * Forbidden:
  * - Scraping / hashing / filtering / persistence logic (owned by the orchestrator).
  * - Instantiating adapters/orchestrators outside DI.
  */
 async function main(): Promise<void> {
+  loadEnvFiles();
   const container = buildContainer();
 
   const schedule = readIngestionConfig(process.env).cronSchedule;
@@ -39,17 +40,13 @@ async function main(): Promise<void> {
     } catch (error) {
       const durationMs = Date.now() - startedAt;
       container.logger.error("cron:news:ingestion:error", { durationMs, error });
+      process.exit(1);
     }
   }
 
-  // Run once. PM2 is the single source of truth for the schedule.
-  container.logger.info("Cron scheduler started (news ingestion).", { schedule });
-  if (shouldRunCronJobOnProcessStart(process.env)) {
-    await runJob();
-  }
-
-  // Keep the process alive so PM2 can restart it on schedule.
-  await keepProcessAlive();
+  container.logger.info("cron:news:ingestion:run", { schedule });
+  await runJob();
+  process.exit(0);
 }
 
 void main();

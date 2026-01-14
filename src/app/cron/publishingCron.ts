@@ -1,8 +1,6 @@
 import { readPublishingConfig } from "../../modules/publishing/public";
 import { loadEnvFiles } from "../config/loadEnv";
 import { buildContainer } from "../di/container";
-import { shouldRunCronJobOnProcessStart } from "./pm2RunGate";
-import { keepProcessAlive } from "./keepAlive";
 
 /**
  * Cron entry-point for the publishing use-case.
@@ -11,7 +9,7 @@ import { keepProcessAlive } from "./keepAlive";
  * - Load `.env` / `.env.local` (if present).
  * - Build the DI container once.
  * - Read schedule from configuration.
- * - Schedule a job that calls only the orchestrator.
+ * - Run the job once per invocation (manual execution).
  *
  * Forbidden:
  * - Business logic (owned by the orchestrator).
@@ -34,17 +32,13 @@ async function main(): Promise<void> {
     } catch (error) {
       const durationMs = Date.now() - startedAt;
       container.logger.error("cron:publishing:digest:error", { durationMs, schedule, error });
+      process.exit(1);
     }
   }
 
-  // Run once. PM2 is the single source of truth for the schedule.
-  container.logger.info("Cron scheduler started (publishing digest).", { schedule });
-  if (shouldRunCronJobOnProcessStart(process.env)) {
-    await runJob();
-  }
-
-  // Keep the process alive so PM2 can restart it on schedule.
-  await keepProcessAlive();
+  container.logger.info("cron:publishing:digest:run", { schedule });
+  await runJob();
+  process.exit(0);
 }
 
 void main();
