@@ -34,7 +34,7 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
   - Update `master`
   - Create a new branch from updated `master` (e.g. `feat/api-digests-news-items`)
 
-- [ ] Step 1: Publishing module — digests read use-case
+- [x] Step 1: Publishing module — digests read use-case
   - Add port `src/modules/publishing/ports/DigestReadPort.ts`
   - Add DTO `src/modules/publishing/dto/DigestDto.ts` (excludes forbidden fields)
   - Add orchestrator `src/modules/publishing/application/ListDigestsOrchestrator.ts`
