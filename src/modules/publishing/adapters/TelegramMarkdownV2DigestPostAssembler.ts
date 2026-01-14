@@ -25,7 +25,7 @@ export class TelegramMarkdownV2DigestPostAssembler implements DigestPostAssemble
     const items = input.items
       .map((x) => x.trim())
       .filter((x) => x.length > 0)
-      .map((x) => `\\- ${escapeMdV2(x)}`);
+      .map((x) => `\\- ${escapeMdV2(x)}\n`);
 
     const footer = buildFooter();
 
