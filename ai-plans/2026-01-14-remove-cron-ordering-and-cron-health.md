@@ -36,11 +36,11 @@ Adjust the project so cron-like jobs can be run **manually from the console** (C
 - Remove dependencies that become unused (e.g., `node-cron` if not referenced anywhere).
 
 ## Implementation Steps
-- [ ] Step 0: Branch prep
+- [x] Step 0: Branch prep
   - Ensure base branch is up to date (`origin/main` is the repo default; there is no `master` branch).
   - Create a new cleanup branch from updated base.
   - Clean working tree (discard local `ecosystem.config.cjs` edits).
-- [ ] Step 1: Remove cron ordering subsystem
+- [x] Step 1: Remove cron ordering subsystem
   - Delete boot-sequence entry point + PM2 gate helpers.
   - Delete `news-pipeline` module and its public exports.
   - Remove `newsPipeline.bootSequence` wiring from DI container.
