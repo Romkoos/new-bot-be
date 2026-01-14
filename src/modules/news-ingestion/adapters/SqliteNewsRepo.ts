@@ -2,10 +2,22 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } from "../ports/NewsItemsRepositoryPort";
+import type { NewsItemDto } from "../dto/NewsItemDto";
 import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
 type TableInfoRow = {
   readonly name: string;
+};
+
+type DbNewsItemByIdRow = {
+  readonly id: number;
+  readonly source: string;
+  readonly raw_text: string;
+  readonly published_at: string | null;
+  readonly scraped_at: string;
+  readonly processed: 0 | 1;
+  readonly media_type: "video" | "image" | null;
+  readonly media_url: string | null;
 };
 
 /**
@@ -70,6 +82,36 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
     });
 
     return { insertedCount: tx(items) };
+  }
+
+  public async findByIds(ids: ReadonlyArray<number>): Promise<ReadonlyArray<NewsItemDto>> {
+    if (ids.length === 0) return [];
+
+    const placeholders = ids.map(() => "?").join(", ");
+    const stmt = this.db.prepare<unknown[], DbNewsItemByIdRow>(
+      `
+      SELECT
+        id,
+        source,
+        raw_text,
+        published_at,
+        scraped_at,
+        processed,
+        media_type,
+        media_url
+      FROM news_items
+      WHERE id IN (${placeholders})
+      `.trim(),
+    );
+
+    const rows = stmt.all(...ids);
+
+    // Enforce narrow types for flags even if a legacy DB stores unexpected integers.
+    return rows.map((r) => ({
+      ...r,
+      processed: r.processed === 1 ? 1 : 0,
+      media_type: r.media_type === "video" || r.media_type === "image" ? r.media_type : null,
+    }));
   }
 
   private ensureSchema(): void {

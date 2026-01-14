@@ -45,16 +45,16 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
     - Order: `ORDER BY id DESC` (or `created_at DESC`)
   - Export orchestrator + DTO/port from `src/modules/publishing/public/index.ts`
 
-- [ ] Step 2: News-ingestion module — news items by ids use-case
+- [x] Step 2: News-ingestion module — news items by ids use-case
   - Add DTO `src/modules/news-ingestion/dto/NewsItemDto.ts` (excludes `hash`, `payload_json`)
   - Add orchestrator `src/modules/news-ingestion/application/GetNewsItemsByIdsOrchestrator.ts`
   - Add a read method to persistence boundary:
     - Option A (preferred for simplicity): extend `NewsItemsRepositoryPort` with:
-      - `findByIds(ids: ReadonlyArray<number>): Promise<ReadonlyArray<NewsItemDto | null>>`
+      - `findByIds(ids: ReadonlyArray<number>): Promise<ReadonlyArray<NewsItemDto>>`
     - Adapter `src/modules/news-ingestion/adapters/SqliteNewsRepo.ts` implements it using a single query:
       - `SELECT id, source, raw_text, published_at, scraped_at, processed, media_type, media_url FROM news_items WHERE id IN (...)`
-      - Preserve input order by mapping `id -> row` and re-building output array in input order.
-      - Return `null` for ids not found (keeps positional contract stable).
+      - Orchestrator preserves input order by mapping `id -> row` and re-building output array in input order.
+      - Orchestrator returns `null` for ids not found (keeps positional contract stable).
   - Export orchestrator + DTO from `src/modules/news-ingestion/public/index.ts`
 
 - [ ] Step 3: DI wiring
