@@ -79,12 +79,13 @@ Cron entry points are long-running processes.
 
 1. Node process starts the cron entry point.
 2. Cron builds the DI container once via `buildContainer()`.
-3. It configures one (or more) schedules via `node-cron`.
-4. It logs that the scheduler started.
+3. Cron does **not** schedule itself. Scheduling is owned by **PM2**.
+4. Cron runs its job once on process start and then stays alive (idle) until terminated.
+5. PM2 restarts the process on a schedule (via `cron_restart`), and each restart triggers one run.
 
 ### Runtime ticks
 
-On each schedule tick:
+On each PM2 scheduled restart:
 
 1. Cron logs the run start.
 2. Cron calls exactly one orchestrator per scheduled job.
@@ -93,6 +94,13 @@ On each schedule tick:
 ### Shutdown
 
 Cron processes keep running until terminated. There is no automatic shutdown.
+
+### Scheduling source of truth
+
+PM2 is the single source of truth for **when** cron jobs run.
+
+- The cron schedule is defined in `ecosystem.config.cjs` via `cron_restart`.
+- PM2’s `cron_restart` requires the process to be running to receive scheduled restarts.
 
 If you need:
 

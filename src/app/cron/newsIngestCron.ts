@@ -1,4 +1,3 @@
-import cron from "node-cron";
 import { buildContainer } from "../di/container";
 import { readIngestionConfig } from "../../modules/news-ingestion/public";
 
@@ -41,11 +40,14 @@ async function main(): Promise<void> {
     }
   }
 
-  cron.schedule(schedule, () => {
-    void runJob();
-  });
-
+  // Run once. PM2 is the single source of truth for the schedule.
   container.logger.info("Cron scheduler started (news ingestion).", { schedule });
+  await runJob();
+
+  // Keep the process alive so PM2 can restart it on schedule.
+  await new Promise(() => {
+    // Intentionally empty.
+  });
 }
 
 void main();

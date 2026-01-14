@@ -43,7 +43,7 @@ Run ingestion repeatedly on a schedule.
 
 ### Schedule configuration
 
-Cron reads schedule from the module config:
+Cron reads the schedule string from the module config (for logging/context):
 
 - `readIngestionConfig(process.env).cronSchedule`
 
@@ -51,20 +51,26 @@ Default value is set in the module config helper:
 
 - `*/5 * * * *` (every 5 minutes)
 
+PM2 is responsible for scheduling:
+
+- `ecosystem.config.cjs` defines the schedule via `cron_restart`.
+- The cron process does **not** schedule itself in-process.
+
 ### Lifecycle
 
 1. Process starts
 2. Cron entry point builds DI container once via `buildContainer()`
-3. It schedules a job using `cron.schedule(schedule, callback)`
-4. On every tick, it runs the orchestrator with `dryRun: false`
-5. It logs start/done/error per tick
+3. It logs that the scheduler started (with `{ schedule }`)
+4. It runs the orchestrator once with `dryRun: false`
+5. It stays alive (idle) until terminated
+6. PM2 restarts the process on schedule; each restart triggers one run
 
 ### What Cron logs
 
 It emits:
 
 - `Cron scheduler started (news ingestion).` with `{ schedule }` once on startup
-- For each tick:
+- For each run:
   - `cron:news:ingestion:start` with `{ schedule }`
   - `cron:news:ingestion:done` with `{ durationMs, source, dryRun, scrapedCount, newItemsCount, storedCount }`
   - `cron:news:ingestion:error` with `{ durationMs, error }` on failure
@@ -74,7 +80,7 @@ It emits:
 Cron does not crash the process on an ingestion failure:
 
 - errors are logged
-- subsequent ticks still run
+- subsequent scheduled runs still happen (PM2 restarts on schedule)
 
 If you need retries/backoff, that is an **infrastructure concern** that belongs in the cron entry point (or a wrapper around it), but the use-case flow ordering must remain in the orchestrator.
 

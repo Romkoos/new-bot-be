@@ -1,4 +1,3 @@
-import cron from "node-cron";
 import { buildContainer } from "../di/container";
 
 /**
@@ -6,7 +5,7 @@ import { buildContainer } from "../di/container";
  *
  * Responsibilities:
  * - Build the DI container once.
- * - Schedule jobs.
+ * - Run jobs once per process start.
  *
  * Forbidden:
  * - Business logic (jobs must only call orchestrators).
@@ -15,13 +14,18 @@ import { buildContainer } from "../di/container";
 async function main(): Promise<void> {
   const container = buildContainer();
 
-  // Every minute.
-  cron.schedule("* * * * *", () => {
+  // Run once. PM2 is the single source of truth for the schedule.
+  function runJob(): void {
     const result = container.health.getHealthStatusOrchestrator.run();
     container.logger.info("cron:health", result);
-  });
+  }
 
-  container.logger.info("Cron scheduler started (health runs every minute).");
+  runJob();
+
+  // Keep the process alive so PM2 can restart it on schedule.
+  await new Promise(() => {
+    // Intentionally empty.
+  });
 }
 
 void main();
