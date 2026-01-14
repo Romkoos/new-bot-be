@@ -54,14 +54,14 @@ Adjust the project so cron-like jobs can be run **manually from the console** (C
 - [x] Step 3: Keep ingest/publish as separate one-shot jobs
   - Convert `src/app/cron/newsIngestCron.ts` and `src/app/cron/publishingCron.ts` into **one-shot** scripts (run once and `process.exit`).
   - Remove PM2-specific behavior (`keepAlive`, run gate).
-- [ ] Step 4: Remove PM2 cron scheduling config + scripts (if no longer used)
+- [x] Step 4: Remove PM2 cron scheduling config + scripts (if no longer used)
   - Remove `ecosystem.config.cjs` (or strip it down if you still want PM2 for something else).
   - Remove `pm2:*` scripts from `package.json` if PM2 is no longer a supported workflow.
-- [ ] Step 5: Documentation cleanup
+- [x] Step 5: Documentation cleanup
   - Update `docs/system/Lifecycle.md` to remove cron ordering/run-gate narrative.
   - Update `docs/ingestion/EntryPoints.md` to describe manual CLI runs (and optionally “external scheduler runs CLI”).
   - Update `docs/modules/health.md` to remove cron health entry point usage section.
-- [ ] Step 6: Dependency cleanup + build verification
+- [x] Step 6: Dependency cleanup + build verification
   - Remove `node-cron` dependency if unused.
   - Ensure `npm run build` succeeds after deletions.
 
@@ -97,5 +97,13 @@ Adjust the project so cron-like jobs can be run **manually from the console** (C
 ## Open Questions
 - (Resolved) Remove all health (module + API + cron).
 - (Resolved) Keep ingestion and publishing as separate one-shot jobs.
-- Should we remove **all** PM2-related scripts/config (`ecosystem.config.cjs`, `pm2:*` scripts), or do you still use PM2 for any non-cron purpose?
+- (Resolved) Remove all PM2-related scripts/config from this repo.
+
+## Completed
+- Date: 2026-01-14
+- Notes:
+  - Removed cron ordering (boot-sequence + run gate) completely.
+  - Removed health (module + API route + job) completely.
+  - Converted ingestion/publishing entry points to one-shot jobs runnable from the console.
+  - Removed PM2 ecosystem config and PM2 scripts; removed `node-cron` dependency.
 
