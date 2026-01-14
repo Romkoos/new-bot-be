@@ -1,4 +1,5 @@
 import { buildContainer } from "../di/container";
+import { shouldRunCronJobOnProcessStart } from "./pm2RunGate";
 
 /**
  * Cron entry-point.
@@ -20,7 +21,9 @@ async function main(): Promise<void> {
     container.logger.info("cron:health", result);
   }
 
-  runJob();
+  if (shouldRunCronJobOnProcessStart(process.env)) {
+    runJob();
+  }
 
   // Keep the process alive so PM2 can restart it on schedule.
   await new Promise(() => {

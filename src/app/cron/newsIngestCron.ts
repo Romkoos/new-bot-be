@@ -1,5 +1,6 @@
 import { buildContainer } from "../di/container";
 import { readIngestionConfig } from "../../modules/news-ingestion/public";
+import { shouldRunCronJobOnProcessStart } from "./pm2RunGate";
 
 /**
  * Cron entry-point for the news ingestion use-case.
@@ -42,7 +43,9 @@ async function main(): Promise<void> {
 
   // Run once. PM2 is the single source of truth for the schedule.
   container.logger.info("Cron scheduler started (news ingestion).", { schedule });
-  await runJob();
+  if (shouldRunCronJobOnProcessStart(process.env)) {
+    await runJob();
+  }
 
   // Keep the process alive so PM2 can restart it on schedule.
   await new Promise(() => {

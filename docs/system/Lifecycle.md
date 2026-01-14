@@ -81,8 +81,8 @@ Cron entry points are long-running processes.
 1. Node process starts the cron entry point.
 2. Cron builds the DI container once via `buildContainer()`.
 3. Cron does **not** schedule itself. Scheduling is owned by **PM2**.
-4. Cron runs its job once on process start and then stays alive (idle) until terminated.
-5. PM2 restarts the process on a schedule (via `cron_restart`), and each restart triggers one run.
+4. Cron stays alive (idle) until terminated.
+5. On PM2 restarts (including `cron_restart`), the cron entry point runs its job once per restart.
 
 ### Boot-time ordering
 
@@ -93,9 +93,8 @@ On PM2 start/restart, the system runs a one-time sequence to ensure deterministi
 This is implemented by:
 
 - `src/app/cron/bootSequence.ts` (runs the sequence once and exits)
-- `ecosystem.config.cjs`:
-  - `cron:boot-sequence` starts immediately
-  - other cron apps use `autostart: false` to avoid parallel first runs
+- `ecosystem.config.cjs` (`cron:boot-sequence` starts immediately)
+- Cron entry points skip executing their job on the initial PM2 start and only execute on PM2 restarts (including `cron_restart`).
 
 ### Runtime ticks
 
@@ -115,6 +114,12 @@ PM2 is the single source of truth for **when** cron jobs run.
 
 - The cron schedule is defined in `ecosystem.config.cjs` via `cron_restart`.
 - Cron jobs are managed by PM2 processes; schedules are not implemented inside the Node.js runtime.
+
+### Deployment prerequisite
+
+PM2 scripts reference `dist/` entry points. Ensure the project is built before starting PM2:
+
+- `npm run build`
 
 If you need:
 
