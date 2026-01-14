@@ -1,10 +1,10 @@
 import { GetHealthStatusOrchestrator, createSystemTimePort } from "../../modules/health/public";
-import { NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestion/public";
+import { GetNewsItemsByIdsOrchestrator, NewsIngestOrch, readIngestionConfig } from "../../modules/news-ingestion/public";
 import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";
 import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
-import { PublishDigestOrchestrator } from "../../modules/publishing/public";
+import { ListDigestsOrchestrator, PublishDigestOrchestrator } from "../../modules/publishing/public";
 import { GoogleGeminiTextGenerator } from "../../modules/publishing/adapters/GoogleGeminiTextGenerator";
 import { SqlitePublishingRepo } from "../../modules/publishing/adapters/SqlitePublishingRepo";
 import { TelegramMarkdownV2DigestPostAssembler } from "../../modules/publishing/adapters/TelegramMarkdownV2DigestPostAssembler";
@@ -26,9 +26,11 @@ export interface AppContainer {
   };
   readonly ingest: {
     readonly news: NewsIngestOrch;
+    readonly getNewsItemsByIds: GetNewsItemsByIdsOrchestrator;
   };
   readonly publishing: {
     readonly publishDigest: PublishDigestOrchestrator;
+    readonly listDigests: ListDigestsOrchestrator;
   };
 }
 
@@ -69,6 +71,7 @@ export function buildContainer(): AppContainer {
     logger,
     timestampFormatter,
   });
+  const getNewsItemsByIds = new GetNewsItemsByIdsOrchestrator(newsRepository);
 
   // Publishing module wiring
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
@@ -83,6 +86,7 @@ export function buildContainer(): AppContainer {
     publisher,
     logger,
   });
+  const listDigests = new ListDigestsOrchestrator(publishingRepo);
 
   return {
     logger,
@@ -91,9 +95,11 @@ export function buildContainer(): AppContainer {
     },
     ingest: {
       news,
+      getNewsItemsByIds,
     },
     publishing: {
       publishDigest,
+      listDigests,
     },
   };
 }

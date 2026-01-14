@@ -57,7 +57,7 @@ Add two **read-only** HTTP endpoints (Express) that expose safe subsets of SQLit
       - Orchestrator returns `null` for ids not found (keeps positional contract stable).
   - Export orchestrator + DTO from `src/modules/news-ingestion/public/index.ts`
 
-- [ ] Step 3: DI wiring
+- [x] Step 3: DI wiring
   - Update `src/app/di/container.ts`:
     - Instantiate `ListDigestsOrchestrator` with `SqlitePublishingRepo` as `DigestReadPort`.
     - Instantiate `GetNewsItemsByIdsOrchestrator` with `SqliteNewsRepo`.
