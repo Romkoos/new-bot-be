@@ -2,6 +2,7 @@ import express from "express";
 import { buildContainer } from "../di/container";
 import { digestsRoute } from "./routes/digestsRoute";
 import { healthRoute } from "./routes/healthRoute";
+import { llmConfigRoute } from "./routes/llmConfigRoute";
 import { newsItemsRoute } from "./routes/newsItemsRoute";
 
 /**
@@ -25,6 +26,7 @@ async function main(): Promise<void> {
   app.use("/api", healthRoute(container));
   app.use("/api", digestsRoute(container));
   app.use("/api", newsItemsRoute(container));
+  app.use("/api", llmConfigRoute(container));
 
   const port = Number(process.env.PORT ?? 3000);
 

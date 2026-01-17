@@ -4,11 +4,12 @@ import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScrap
 import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
-import { ListDigestsOrchestrator, PublishDigestOrchestrator } from "../../modules/publishing/public";
+import { GetLlmConfigOrchestrator, ListDigestsOrchestrator, PublishDigestOrchestrator, UpsertLlmConfigOrchestrator } from "../../modules/publishing/public";
 import { GoogleGeminiTextGenerator } from "../../modules/publishing/adapters/GoogleGeminiTextGenerator";
 import { SqlitePublishingRepo } from "../../modules/publishing/adapters/SqlitePublishingRepo";
 import { TelegramMarkdownV2DigestPostAssembler } from "../../modules/publishing/adapters/TelegramMarkdownV2DigestPostAssembler";
 import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
+import { LlmConfigService } from "../../modules/publishing/application/LlmConfigService";
 import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
 import { BootSequenceOrchestrator } from "../../modules/news-pipeline/public";
@@ -32,6 +33,8 @@ export interface AppContainer {
   readonly publishing: {
     readonly publishDigest: PublishDigestOrchestrator;
     readonly listDigests: ListDigestsOrchestrator;
+    readonly getLlmConfig: GetLlmConfigOrchestrator;
+    readonly upsertLlmConfig: UpsertLlmConfigOrchestrator;
   };
   readonly newsPipeline: {
     readonly bootSequence: BootSequenceOrchestrator;
@@ -79,6 +82,7 @@ export function buildContainer(): AppContainer {
 
   // Publishing module wiring
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
+  const llmConfigService = new LlmConfigService({ sqlitePath, timestampFormatter });
   const textGenerator = new GoogleGeminiTextGenerator({ env: process.env });
   const postAssembler = new TelegramMarkdownV2DigestPostAssembler();
   const publisher = new TelegramMarkdownPublisher({ env: process.env });
@@ -86,11 +90,14 @@ export function buildContainer(): AppContainer {
     newsSelection: publishingRepo,
     digestRepository: publishingRepo,
     textGenerator,
+    llmConfigService,
     postAssembler,
     publisher,
     logger,
   });
   const listDigests = new ListDigestsOrchestrator(publishingRepo);
+  const getLlmConfig = new GetLlmConfigOrchestrator(llmConfigService);
+  const upsertLlmConfig = new UpsertLlmConfigOrchestrator(llmConfigService);
 
   // News pipeline module wiring
   const bootSequence = new BootSequenceOrchestrator({
@@ -111,6 +118,8 @@ export function buildContainer(): AppContainer {
     publishing: {
       publishDigest,
       listDigests,
+      getLlmConfig,
+      upsertLlmConfig,
     },
     newsPipeline: {
       bootSequence,
