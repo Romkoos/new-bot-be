@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-- Route: `GET /health`
+- Route: `GET /api/health`
 - Port: defaults to `3000` (override with `PORT`)
 
 ## Run (Cron)

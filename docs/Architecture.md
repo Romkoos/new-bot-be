@@ -134,10 +134,10 @@ The runtime shape is always:
 
 **Entry-point → DI container → Orchestrator → Ports → Adapters**
 
-### API flow: `GET /health`
+### API flow: `GET /api/health`
 
 1. `src/app/api/server.ts` builds the container with `buildContainer()`.
-2. `src/app/api/routes/healthRoute.ts` handles `GET /health`.
+2. `src/app/api/routes/healthRoute.ts` handles `GET /api/health`.
 3. The route handler calls the orchestrator instance from the container.
 4. The orchestrator returns a DTO. The handler returns it as JSON.
 

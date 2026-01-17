@@ -129,7 +129,7 @@ Files:
 Flow:
 
 1. API builds container once.
-2. `GET /health` handler calls the orchestrator:
+2. `GET /api/health` handler calls the orchestrator:
    - `container.health.getHealthStatusOrchestrator.run()`
 3. Returns the DTO as JSON.
 

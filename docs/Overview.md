@@ -71,12 +71,12 @@ Forbidden:
 
 ### Request
 
-- `GET /health`
+- `GET /api/health`
 
 ### Step-by-step
 
 1. `src/app/api/server.ts` starts Express and builds the container via `buildContainer()`.
-2. `src/app/api/routes/healthRoute.ts` handles `GET /health`.
+2. `src/app/api/routes/healthRoute.ts` handles `GET /api/health`.
 3. The handler calls **only** the orchestrator instance from the container.
 4. The orchestrator returns a DTO which is serialized to JSON.
 
