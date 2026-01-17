@@ -21,9 +21,10 @@ async function main(): Promise<void> {
   const app = express();
   app.use(express.json());
 
-  app.use(healthRoute(container));
-  app.use(digestsRoute(container));
-  app.use(newsItemsRoute(container));
+  // All REST endpoints must be served under the `/api` prefix.
+  app.use("/api", healthRoute(container));
+  app.use("/api", digestsRoute(container));
+  app.use("/api", newsItemsRoute(container));
 
   const port = Number(process.env.PORT ?? 3000);
 
