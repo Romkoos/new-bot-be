@@ -10,6 +10,8 @@ export type { TextGenerationPort } from "../ports/TextGenerationPort";
 
 export { PublishDigestOrchestrator } from "../application/PublishDigestOrchestrator";
 export { ListDigestsOrchestrator } from "../application/ListDigestsOrchestrator";
+export { GetLlmConfigOrchestrator } from "../application/GetLlmConfigOrchestrator";
+export { UpsertLlmConfigOrchestrator } from "../application/UpsertLlmConfigOrchestrator";
 
 export { PUBLISH_ENV, readPublishingConfig } from "./publishingEnv";
 export type { PublishingRuntimeConfig } from "./publishingEnv";

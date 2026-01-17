@@ -10,6 +10,55 @@ Entry-point rule reminder: route handlers are infrastructure-only; they validate
 
 ## Endpoints
 
+### `GET /api/llm-config`
+
+Returns the current LLM configuration used by the publishing flow.
+
+**Response shape**
+
+- `model` — Gemini model id string.
+- `instructions` — prompt instructions string.
+- `updatedAt` — ISO timestamp string.
+
+**Example**
+
+```json
+{
+  "model": "gemini-2.0-flash-lite",
+  "instructions": "...",
+  "updatedAt": "2026-01-17T00:00:00.000Z"
+}
+```
+
+Failure modes:
+- If the `llm_config` row does not exist, this endpoint returns `500` (system is not configured).
+- If the row exists but is invalid (empty strings), this endpoint returns `500`.
+
+### `PUT /api/llm-config`
+
+Creates or updates the LLM configuration used by the publishing flow.
+
+If the config row does not exist yet, it will be created.
+
+**Request body**
+
+- `model` — non-empty string.
+- `instructions` — non-empty string.
+
+**Response shape**
+
+Same as `GET /api/llm-config`.
+
+**Example**
+
+```json
+{
+  "model": "gemini-2.0-flash-lite",
+  "instructions": "Your instructions here...",
+  "updatedAt": "2026-01-17T00:00:00.000Z"
+}
+```
+
 ### `GET /api/digests`
 
 Returns an array of digests.

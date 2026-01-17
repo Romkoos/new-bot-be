@@ -48,8 +48,9 @@ File:
 This orchestrator owns the full use-case ordering:
 
 1. Select rows from `news_items` where `processed = 0` (`ORDER BY id ASC`).
-2. Generate a digest using `TextGenerationPort` with a predefined prompt.
-3. Normalize the digest text minimally and deterministically.
+2. Load LLM config from SQLite table `llm_config` (single row with `id = 1`).
+3. Generate a digest using `TextGenerationPort` using the DB-provided `model` + `instructions`.
+4. Normalize the digest text minimally and deterministically.
 4. Persist a pending digest to `digests` and mark selected `news_items` as processed (atomic).
 5. Publish the digest using `MarkdownPublisherPort`.
 6. Mark the digest as published (`is_published = 1`) only after the publisher succeeds.
@@ -83,6 +84,22 @@ Provider-agnostic interface for publishing Markdown text. The concrete Telegram 
 Persists digests and tracks publish state (`is_published`).
 
 ## Storage
+
+### `llm_config`
+
+The publishing flow depends on a single-row config table:
+
+- `llm_config`
+
+Schema (single row):
+- `id` — must be `1` (enforced by `CHECK(id = 1)`).
+- `model` — non-empty string.
+- `instructions` — non-empty string.
+- `updated_at` — ISO string.
+
+Runtime rules:
+- If the table exists but has **no row**, the publishing flow throws a fatal error and stops execution.
+- If the row exists but `model`/`instructions` are invalid (empty strings), the publishing flow **skips execution** (early exit) without calling the LLM.
 
 ### `digests`
 
@@ -128,7 +145,6 @@ Behavior:
 The publishing flow requires:
 
 - `GEMINI_API_KEY`
-- `PUBLISHING_LLM_MODEL` (optional; defaults inside the Gemini adapter)
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - `TELEGRAM_PARSE_MODE` (recommended: `MarkdownV2`)
