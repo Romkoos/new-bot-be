@@ -23,11 +23,11 @@ Update the Express API entry point so that **all** HTTP endpoints are served und
     - `GET /api/health`
     - `GET /api/digests`
     - `GET /api/news-items/by-ids?ids=1,2,3`
-- [ ] Step 2: Update docs to match runtime behavior
-  - [ ] `docs/api/README.md` — change endpoints to `/api/...`
-  - [ ] `docs/system/Lifecycle.md` — example request becomes `GET /api/health`
-  - [ ] `docs/Overview.md` — change `GET /health` mentions to `/api/health`
-  - [ ] `docs/Architecture.md` — API flow example becomes `GET /api/health`
+- [x] Step 2: Update docs to match runtime behavior
+  - [x] `docs/api/README.md` — change endpoints to `/api/...`
+  - [x] `docs/system/Lifecycle.md` — example request becomes `GET /api/health`
+  - [x] `docs/Overview.md` — change `GET /health` mentions to `/api/health`
+  - [x] `docs/Architecture.md` — API flow example becomes `GET /api/health`
 - [ ] Step 3: Validation
   - [ ] Quick grep to ensure no remaining doc references to root endpoints (`GET /health`, `GET /digests`, `GET /news-items/...`) unless explicitly called out as legacy.
   - [ ] Run `npm test` (Vitest) to ensure nothing regressed.

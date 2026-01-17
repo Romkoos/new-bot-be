@@ -60,7 +60,7 @@ The key invariant:
 
 ### Request handling
 
-For each incoming request (example: `GET /health`):
+For each incoming request (example: `GET /api/health`):
 
 1. Route handler validates/parses input (minimal).
 2. Handler calls exactly one orchestrator instance from the container.

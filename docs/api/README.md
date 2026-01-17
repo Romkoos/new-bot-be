@@ -10,7 +10,7 @@ Entry-point rule reminder: route handlers are infrastructure-only; they validate
 
 ## Endpoints
 
-### `GET /digests`
+### `GET /api/digests`
 
 Returns an array of digests.
 
@@ -48,7 +48,7 @@ Returned fields:
 ]
 ```
 
-### `GET /news-items/by-ids?ids=1,2,3`
+### `GET /api/news-items/by-ids?ids=1,2,3`
 
 Returns an array of news item objects (or `null`), in the **same order** as the input ids.
 
@@ -80,7 +80,7 @@ Returned fields (when found):
 
 Request:
 
-- `GET /news-items/by-ids?ids=1,999,2`
+- `GET /api/news-items/by-ids?ids=1,999,2`
 
 Response:
 
