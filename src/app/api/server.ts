@@ -28,13 +28,6 @@ async function main(): Promise<void> {
   app.use("/api", newsItemsRoute(container));
   app.use("/api", llmConfigRoute(container));
 
-  // Backwards-compatibility for reverse proxies (e.g. nginx) that rewrite `/api/*` to `/*`
-  // before forwarding to this server.
-  app.use("/", healthRoute(container));
-  app.use("/", digestsRoute(container));
-  app.use("/", newsItemsRoute(container));
-  app.use("/", llmConfigRoute(container));
-
   const port = Number(process.env.PORT ?? 3000);
 
   app.listen(port, () => {
