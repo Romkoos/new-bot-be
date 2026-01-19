@@ -14,9 +14,13 @@ Entry-point rule reminder: route handlers are infrastructure-only; they validate
 
 Returns the current LLM configuration used by the publishing flow.
 
+Notes:
+- The API contract still exposes `model` as a **model name string** (e.g. `gemini-2.0-flash-lite`).
+- Internally, the system persists the selected model as a **model id** (`llm_config.model_id`) linked to `llm_models`.
+
 **Response shape**
 
-- `model` — Gemini model id string.
+- `model` — Model name string (e.g. Gemini model id).
 - `instructions` — prompt instructions string.
 - `updatedAt` — ISO timestamp string.
 
@@ -58,6 +62,94 @@ Same as `GET /api/llm-config`.
   "updatedAt": "2026-01-17T00:00:00.000Z"
 }
 ```
+
+### `POST /api/llms`
+
+Creates an LLM provider.
+
+**Request body**
+
+- `name` — non-empty string (unique).
+- `alias` — non-empty string.
+
+**Response shape**
+
+Returns the created row:
+- `id` — integer.
+- `name` — string.
+- `alias` — string.
+
+### `GET /api/llms`
+
+Returns all configured LLM providers.
+
+**Response shape**
+
+Array of:
+- `id` — integer.
+- `name` — string.
+- `alias` — string.
+
+### `PUT /api/llms/:id`
+
+Updates an LLM provider.
+
+**Request body**
+
+At least one of:
+- `name` — non-empty string.
+- `alias` — non-empty string.
+
+### `DELETE /api/llms/:id`
+
+Deletes an LLM provider.
+
+Notes:
+- Deletion is rejected if the current `llm_config` references any model under that LLM.
+
+### `POST /api/llm-models`
+
+Creates a model linked to an LLM.
+
+**Request body**
+
+- `llmId` — positive integer (must reference an existing LLM).
+- `name` — non-empty string (unique).
+
+**Response shape**
+
+Returns the created row:
+- `id` — integer.
+- `llm_id` — integer (LLM id).
+- `name` — string.
+
+### `GET /api/llms/:id/models`
+
+Returns models linked to a specific LLM provider.
+
+**Response shape**
+
+Array of:
+- `id` — integer.
+- `llm_id` — integer.
+- `name` — string.
+
+### `PUT /api/llm-models/:id`
+
+Updates a model.
+
+**Request body**
+
+At least one of:
+- `llmId` — positive integer.
+- `name` — non-empty string.
+
+### `DELETE /api/llm-models/:id`
+
+Deletes a model.
+
+Notes:
+- Deletion is rejected if the current `llm_config` references that model.
 
 ### `GET /api/digests`
 

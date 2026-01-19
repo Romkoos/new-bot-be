@@ -13,5 +13,15 @@ export { ListDigestsOrchestrator } from "../application/ListDigestsOrchestrator"
 export { GetLlmConfigOrchestrator } from "../application/GetLlmConfigOrchestrator";
 export { UpsertLlmConfigOrchestrator } from "../application/UpsertLlmConfigOrchestrator";
 
+export type { CatalogResult, LlmDto, LlmModelDto } from "../application/LlmCatalogService";
+export { ListLlmsOrchestrator } from "../application/ListLlmsOrchestrator";
+export { ListModelsByLlmIdOrchestrator } from "../application/ListModelsByLlmIdOrchestrator";
+export { CreateLlmOrchestrator } from "../application/CreateLlmOrchestrator";
+export { UpdateLlmOrchestrator } from "../application/UpdateLlmOrchestrator";
+export { DeleteLlmOrchestrator } from "../application/DeleteLlmOrchestrator";
+export { CreateLlmModelOrchestrator } from "../application/CreateLlmModelOrchestrator";
+export { UpdateLlmModelOrchestrator } from "../application/UpdateLlmModelOrchestrator";
+export { DeleteLlmModelOrchestrator } from "../application/DeleteLlmModelOrchestrator";
+
 export { PUBLISH_ENV, readPublishingConfig } from "./publishingEnv";
 export type { PublishingRuntimeConfig } from "./publishingEnv";

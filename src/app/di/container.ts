@@ -4,11 +4,25 @@ import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScrap
 import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/PublishedAtResolver";
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
-import { GetLlmConfigOrchestrator, ListDigestsOrchestrator, PublishDigestOrchestrator, UpsertLlmConfigOrchestrator } from "../../modules/publishing/public";
+import {
+  CreateLlmModelOrchestrator,
+  CreateLlmOrchestrator,
+  DeleteLlmModelOrchestrator,
+  DeleteLlmOrchestrator,
+  GetLlmConfigOrchestrator,
+  ListLlmsOrchestrator,
+  ListModelsByLlmIdOrchestrator,
+  ListDigestsOrchestrator,
+  PublishDigestOrchestrator,
+  UpdateLlmModelOrchestrator,
+  UpdateLlmOrchestrator,
+  UpsertLlmConfigOrchestrator,
+} from "../../modules/publishing/public";
 import { GoogleGeminiTextGenerator } from "../../modules/publishing/adapters/GoogleGeminiTextGenerator";
 import { SqlitePublishingRepo } from "../../modules/publishing/adapters/SqlitePublishingRepo";
 import { TelegramMarkdownV2DigestPostAssembler } from "../../modules/publishing/adapters/TelegramMarkdownV2DigestPostAssembler";
 import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
+import { LlmCatalogService } from "../../modules/publishing/application/LlmCatalogService";
 import { LlmConfigService } from "../../modules/publishing/application/LlmConfigService";
 import { SystemUtcIsoTimestampFormatter } from "../../shared/adapters/SystemUtcIsoTimestampFormatter";
 import { createConsoleLogger } from "../../shared/observability/logger";
@@ -35,6 +49,14 @@ export interface AppContainer {
     readonly listDigests: ListDigestsOrchestrator;
     readonly getLlmConfig: GetLlmConfigOrchestrator;
     readonly upsertLlmConfig: UpsertLlmConfigOrchestrator;
+    readonly listLlms: ListLlmsOrchestrator;
+    readonly listModelsByLlmId: ListModelsByLlmIdOrchestrator;
+    readonly createLlm: CreateLlmOrchestrator;
+    readonly updateLlm: UpdateLlmOrchestrator;
+    readonly deleteLlm: DeleteLlmOrchestrator;
+    readonly createModel: CreateLlmModelOrchestrator;
+    readonly updateModel: UpdateLlmModelOrchestrator;
+    readonly deleteModel: DeleteLlmModelOrchestrator;
   };
   readonly newsPipeline: {
     readonly bootSequence: BootSequenceOrchestrator;
@@ -82,6 +104,8 @@ export function buildContainer(): AppContainer {
 
   // Publishing module wiring
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
+  // Ensure the LLM catalog tables exist and are seeded on boot (idempotent).
+  const llmCatalogService = new LlmCatalogService({ sqlitePath });
   const llmConfigService = new LlmConfigService({ sqlitePath, timestampFormatter });
   const textGenerator = new GoogleGeminiTextGenerator({ env: process.env });
   const postAssembler = new TelegramMarkdownV2DigestPostAssembler();
@@ -98,6 +122,14 @@ export function buildContainer(): AppContainer {
   const listDigests = new ListDigestsOrchestrator(publishingRepo);
   const getLlmConfig = new GetLlmConfigOrchestrator(llmConfigService);
   const upsertLlmConfig = new UpsertLlmConfigOrchestrator(llmConfigService);
+  const listLlms = new ListLlmsOrchestrator(llmCatalogService);
+  const listModelsByLlmId = new ListModelsByLlmIdOrchestrator(llmCatalogService);
+  const createLlm = new CreateLlmOrchestrator(llmCatalogService);
+  const updateLlm = new UpdateLlmOrchestrator(llmCatalogService);
+  const deleteLlm = new DeleteLlmOrchestrator(llmCatalogService);
+  const createModel = new CreateLlmModelOrchestrator(llmCatalogService);
+  const updateModel = new UpdateLlmModelOrchestrator(llmCatalogService);
+  const deleteModel = new DeleteLlmModelOrchestrator(llmCatalogService);
 
   // News pipeline module wiring
   const bootSequence = new BootSequenceOrchestrator({
@@ -120,6 +152,14 @@ export function buildContainer(): AppContainer {
       listDigests,
       getLlmConfig,
       upsertLlmConfig,
+      listLlms,
+      listModelsByLlmId,
+      createLlm,
+      updateLlm,
+      deleteLlm,
+      createModel,
+      updateModel,
+      deleteModel,
     },
     newsPipeline: {
       bootSequence,

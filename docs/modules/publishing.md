@@ -17,9 +17,13 @@ In the current implementation:
 
 ## Ownership
 
-The module owns one orchestrator:
+The module owns one flow orchestrator:
 
 - `PublishDigestOrchestrator`
+
+Additionally, it owns catalog/config use-cases:
+- `GetLlmConfigOrchestrator`, `UpsertLlmConfigOrchestrator`
+- LLM catalog CRUD orchestrators (LLMs + models)
 
 ## Public API (`src/modules/publishing/public/index.ts`)
 
@@ -85,6 +89,24 @@ Persists digests and tracks publish state (`is_published`).
 
 ## Storage
 
+### `llms` (LLM providers)
+
+Stores LLM providers (e.g. Gemini).
+
+Schema:
+- `id` — integer primary key.
+- `name` — unique provider name (e.g. `gemini`).
+- `alias` — display label (e.g. `Gemini`).
+
+### `llm_models` (models)
+
+Stores models linked to an LLM provider.
+
+Schema:
+- `id` — integer primary key.
+- `llm_id` — foreign key to `llms.id`.
+- `name` — unique model name (e.g. `gemini-2.0-flash-lite`).
+
 ### `llm_config`
 
 The publishing flow depends on a single-row config table:
@@ -93,13 +115,16 @@ The publishing flow depends on a single-row config table:
 
 Schema (single row):
 - `id` — must be `1` (enforced by `CHECK(id = 1)`).
-- `model` — non-empty string.
+- `model_id` — foreign key to `llm_models.id`.
 - `instructions` — non-empty string.
 - `updated_at` — ISO string.
 
 Runtime rules:
 - If the table exists but has **no row**, the publishing flow throws a fatal error and stops execution.
-- If the row exists but `model`/`instructions` are invalid (empty strings), the publishing flow **skips execution** (early exit) without calling the LLM.
+- If the row exists but the resolved model name or `instructions` are invalid (empty strings), the publishing flow **skips execution** (early exit) without calling the LLM.
+
+API contract note:
+- The `/api/llm-config` surface continues to expose `model` as a **model name string**, even though the DB stores `model_id`.
 
 ### `digests`
 
