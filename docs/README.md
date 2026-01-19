@@ -12,6 +12,7 @@
 ### System
 - [Lifecycle](./system/Lifecycle.md) (startup/shutdown for API/Cron/CLI)
 - [Dependency Injection](./system/DependencyInjection.md) (composition root, wiring rules)
+- [System architecture diagrams](./system/SystemArchitectureDiagram.md) (big picture, API request flow, PM2 boot sequence)
 
 ### Modules
 - [Modules index](./modules/README.md)
