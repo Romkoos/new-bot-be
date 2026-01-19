@@ -31,7 +31,7 @@ Create a higher-signal architecture doc by:
 - [x] Step 1: Create or update `docs/system/SystemArchitectureDiagram.md`
   - Include 3 diagrams as described above.
   - Ensure health path reflects reality (health uses system time, not SQLite).
-- [ ] Step 2: Update docs index
+- [x] Step 2: Update docs index
   - Add a link under `docs/README.md` → **System** section.
 
 ## Files to Modify/Create
