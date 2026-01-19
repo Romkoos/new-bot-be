@@ -5,7 +5,8 @@ import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoT
 
 type DbLlmConfigRow = {
   readonly id: 1;
-  readonly model: string;
+  readonly model_id: number;
+  readonly model_name: string | null;
   readonly instructions: string;
   readonly updated_at: string;
 };
@@ -38,6 +39,7 @@ export class LlmConfigService {
     this.db = new Database(params.sqlitePath);
     this.timestampFormatter = params.timestampFormatter;
     this.ensureSchema();
+    this.migrateLegacySchemaIfNeeded();
   }
 
   /**
@@ -60,12 +62,15 @@ export class LlmConfigService {
       .prepare<unknown[], DbLlmConfigRow>(
         `
         SELECT
-          id,
-          model,
-          instructions,
-          updated_at
-        FROM llm_config
-        WHERE id = 1
+          c.id,
+          c.model_id,
+          m.name AS model_name,
+          c.instructions,
+          c.updated_at
+        FROM llm_config c
+        LEFT JOIN llm_models m
+          ON m.id = c.model_id
+        WHERE c.id = 1
         `.trim(),
       )
       .get();
@@ -96,24 +101,27 @@ export class LlmConfigService {
       return { ok: false, error: "instructions must be a non-empty string." };
     }
 
+    const modelName = input.model.trim();
+    const modelId = this.resolveOrCreateModelIdByName(modelName);
+
     const nowIso = this.timestampFormatter.nowUtcIso();
     const stmt = this.db.prepare(
       `
-      INSERT INTO llm_config (id, model, instructions, updated_at)
+      INSERT INTO llm_config (id, model_id, instructions, updated_at)
       VALUES (1, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        model = excluded.model,
+        model_id = excluded.model_id,
         instructions = excluded.instructions,
         updated_at = excluded.updated_at
       `.trim(),
     );
 
-    stmt.run(input.model.trim(), input.instructions, nowIso);
+    stmt.run(modelId, input.instructions, nowIso);
 
     return {
       ok: true,
       config: {
-        model: input.model.trim(),
+        model: modelName,
         instructions: input.instructions,
         updatedAt: nowIso,
       },
@@ -123,20 +131,134 @@ export class LlmConfigService {
   private ensureSchema(): void {
     this.db.exec(
       `
+      CREATE TABLE IF NOT EXISTS llms (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        alias TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS llm_models (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        llm_id INTEGER NOT NULL,
+        name TEXT NOT NULL UNIQUE,
+        FOREIGN KEY (llm_id) REFERENCES llms(id) ON DELETE CASCADE
+      );
+
       CREATE TABLE IF NOT EXISTS llm_config (
         id INTEGER PRIMARY KEY CHECK (id = 1),
-        model TEXT NOT NULL,
+        model_id INTEGER NOT NULL,
         instructions TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (model_id) REFERENCES llm_models(id)
       );
       `.trim(),
     );
+  }
+
+  private migrateLegacySchemaIfNeeded(): void {
+    // Legacy schema (2026-01-17): llm_config(id, model TEXT, instructions, updated_at)
+    // New schema: llm_config(id, model_id INTEGER, instructions, updated_at)
+    const tableInfo = this.db
+      .prepare<unknown[], { readonly name: string }>(`PRAGMA table_info(llm_config);`)
+      .all();
+
+    // No table yet (fresh DB) -> ensureSchema() already created the new one.
+    if (tableInfo.length === 0) return;
+
+    const cols = new Set(tableInfo.map((r) => r.name));
+    if (cols.has("model_id")) return; // already migrated
+    if (!cols.has("model")) return; // unknown shape; do not attempt to migrate
+
+    const legacyRow = this.db
+      .prepare<unknown[], { readonly model: string; readonly instructions: string; readonly updated_at: string }>(
+        `
+        SELECT model, instructions, updated_at
+        FROM llm_config
+        WHERE id = 1
+        `.trim(),
+      )
+      .get();
+
+    const tx = this.db.transaction(() => {
+      this.db.exec(
+        `
+        CREATE TABLE llm_config__new (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          model_id INTEGER NOT NULL,
+          instructions TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (model_id) REFERENCES llm_models(id)
+        );
+        `.trim(),
+      );
+
+      if (legacyRow) {
+        const modelName = legacyRow.model.trim();
+        const modelId = this.resolveOrCreateModelIdByName(modelName);
+        this.db
+          .prepare(
+            `
+            INSERT INTO llm_config__new (id, model_id, instructions, updated_at)
+            VALUES (1, ?, ?, ?)
+            `.trim(),
+          )
+          .run(modelId, legacyRow.instructions, legacyRow.updated_at);
+      }
+
+      this.db.exec("DROP TABLE llm_config;");
+      this.db.exec("ALTER TABLE llm_config__new RENAME TO llm_config;");
+    });
+
+    tx();
+  }
+
+  private resolveOrCreateModelIdByName(modelName: string): number {
+    const selectModelStmt = this.db.prepare<{ readonly name: string }, { readonly id: number }>(
+      `
+      SELECT id
+      FROM llm_models
+      WHERE name = :name
+      `.trim(),
+    );
+
+    const existing = selectModelStmt.get({ name: modelName });
+    if (existing) return existing.id;
+
+    // Fallback policy (safe default for legacy behavior):
+    // - If a model name is unknown, create it under the Gemini LLM.
+    // This preserves the previous "free-text model string" contract without breaking startup/migration.
+    const gemini = this.db
+      .prepare<unknown[], { readonly id: number }>(
+        `
+        SELECT id
+        FROM llms
+        WHERE name = 'gemini'
+        `.trim(),
+      )
+      .get();
+
+    if (!gemini) {
+      throw new Error(
+        'LlmConfigService: cannot auto-create model because base LLM "gemini" is missing. Ensure LlmCatalogService seeding runs on boot.',
+      );
+    }
+
+    const insert = this.db
+      .prepare(
+        `
+        INSERT INTO llm_models (llm_id, name)
+        VALUES (?, ?)
+        `.trim(),
+      )
+      .run(gemini.id, modelName);
+
+    return Number(insert.lastInsertRowid);
   }
 }
 
 function validateConfigRow(row: DbLlmConfigRow): LlmConfigResult {
   // Keep validation minimal and deterministic.
-  const model = row.model.trim();
+  const model = (row.model_name ?? "").trim();
   const instructions = row.instructions;
 
   if (!model) return { ok: false, error: "Invalid llm_config: model must be a non-empty string." };
