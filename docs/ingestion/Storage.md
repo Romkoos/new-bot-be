@@ -43,6 +43,8 @@ Columns:
 - `scraped_at TEXT NOT NULL` (ISO string set at insertion time)
 - `payload_json TEXT NOT NULL` (serialized normalized payload)
 - `processed INTEGER NOT NULL DEFAULT 0` (0/1; used by content preparation to track whether a row has been processed)
+- `filtered INTEGER NOT NULL DEFAULT 0` (0/1; set when an item matches any configured regex filter)
+- `filters_ids TEXT NOT NULL DEFAULT '[]'` (JSON array of filter ids that matched; example: `[1,2]`)
 - `media_type TEXT NULL` (allowed values: `video` or `image`, otherwise `NULL`)
 - `media_url TEXT NULL` (URL string, otherwise `NULL`)
 

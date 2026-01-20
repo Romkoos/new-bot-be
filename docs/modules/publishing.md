@@ -52,6 +52,13 @@ File:
 This orchestrator owns the full use-case ordering:
 
 1. Select rows from `news_items` where `processed = 0` (`ORDER BY id ASC`).
+2. Load all configured regex filters from the `news-filtering` module.
+3. For each selected item:
+   - If it matches any filter:
+     - mark the item as `filtered = 1`
+     - persist `filters_ids` as the JSON array of matching filter ids
+     - mark the item as `processed = 1` (so it stops reappearing)
+   - Otherwise, keep it as a candidate for digest generation.
 2. Load LLM config from SQLite table `llm_config` (single row with `id = 1`).
 3. Generate a digest using `TextGenerationPort` using the DB-provided `model` + `instructions`.
 4. Normalize the digest text minimally and deterministically.
@@ -63,6 +70,7 @@ This orchestrator owns the full use-case ordering:
 
 - `publishing:digest:start`
 - `publishing:digest:early-exit:no-unprocessed-items`
+- `publishing:digest:early-exit:all-items-filtered`
 - `publishing:digest:done`
 
 ## Ports
@@ -141,6 +149,8 @@ Key fields:
 Source rows are tracked via:
 
 - `news_items.processed` (0/1)
+- `news_items.filtered` (0/1; derived by applying filters)
+- `news_items.filters_ids` (JSON array of matched filter ids)
 
 ## Runtime integration
 

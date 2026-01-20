@@ -118,14 +118,14 @@ Implement regex-based filtering that:
     - (Optional but recommended) `GET /filters` (list) for admin usability and to obtain ids.
   - Register in `src/app/api/server.ts` under `/api`.
 
-- [ ] Step 6: Tests
+- [x] Step 6: Tests
   - Unit tests in Vitest (no SQLite dependency):
     - Regex validation behavior (invalid regex rejected)
     - Publishing orchestrator filtering partition logic (using fake ports):
       - items matching any filter are excluded from digest input
       - filtered items are marked processed via the port
 
-- [ ] Step 7: Docs update (mandatory)
+- [x] Step 7: Docs update (mandatory)
   - Update `docs/api/README.md` with filter endpoints (request/response + examples).
   - Add a short section to `docs/modules/publishing.md` explaining:
     - `news_items.filtered` semantics
