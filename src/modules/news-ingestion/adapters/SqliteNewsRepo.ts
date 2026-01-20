@@ -17,6 +17,7 @@ type DbNewsItemByIdRow = {
   readonly scraped_at: string;
   readonly processed: 0 | 1;
   readonly filtered: 0 | 1;
+  readonly filters_ids: string;
   readonly media_type: "video" | "image" | null;
   readonly media_url: string | null;
 };
@@ -99,6 +100,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
         scraped_at,
         processed,
         filtered,
+        filters_ids,
         media_type,
         media_url
       FROM news_items
@@ -110,10 +112,16 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
 
     // Enforce narrow types for flags even if a legacy DB stores unexpected integers.
     return rows.map((r) => ({
-      ...r,
+      id: r.id,
+      source: r.source,
+      raw_text: r.raw_text,
+      published_at: r.published_at,
+      scraped_at: r.scraped_at,
       processed: r.processed === 1 ? 1 : 0,
       filtered: r.filtered === 1 ? 1 : 0,
+      filters_ids: parseFiltersIdsJson(r.filters_ids),
       media_type: r.media_type === "video" || r.media_type === "image" ? r.media_type : null,
+      media_url: r.media_url,
     }));
   }
 
@@ -130,6 +138,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
         payload_json TEXT NOT NULL,
         processed INTEGER NOT NULL DEFAULT 0,
         filtered INTEGER NOT NULL DEFAULT 0,
+        filters_ids TEXT NOT NULL DEFAULT '[]',
         media_type TEXT NULL,
         media_url TEXT NULL
       );
@@ -147,6 +156,12 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
       table: "news_items",
       column: "filtered",
       alterSql: `ALTER TABLE news_items ADD COLUMN filtered INTEGER NOT NULL DEFAULT 0;`,
+    });
+
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "filters_ids",
+      alterSql: `ALTER TABLE news_items ADD COLUMN filters_ids TEXT NOT NULL DEFAULT '[]';`,
     });
 
     this.ensureColumnExists({
@@ -179,4 +194,18 @@ function ensureSqliteParentDirectory(sqlitePath: string): void {
   // If a relative file path is used (default: ./data/news-bot.sqlite), ensure the directory exists.
   const dir = dirname(sqlitePath);
   mkdirSync(dir, { recursive: true });
+}
+
+function parseFiltersIdsJson(value: string): ReadonlyArray<number> {
+  try {
+    const parsed: unknown = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const out: number[] = [];
+    for (const v of parsed) {
+      if (typeof v === "number" && Number.isInteger(v) && v > 0) out.push(v);
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }

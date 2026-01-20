@@ -62,7 +62,7 @@ Implement regex-based filtering that:
     - Extend `DbNewsItemByIdRow` + `NewsItemDto` mapping to include `filtered: 0 | 1`
   - Update `src/modules/publishing/adapters/SqlitePublishingRepo.ts` similarly (it also ensures `news_items` exists).
 
-- [ ] Step 1b: Add DB schema support for `news_items.filters_ids`
+- [x] Step 1b: Add DB schema support for `news_items.filters_ids`
   - Update `src/modules/news-ingestion/adapters/SqliteNewsRepo.ts`:
     - Add `filters_ids` column to `CREATE TABLE IF NOT EXISTS news_items (...)`
     - Add `ensureColumnExists` call for `filters_ids` with `DEFAULT '[]'`
