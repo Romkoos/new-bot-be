@@ -59,7 +59,7 @@ Implement regex-based filtering that:
     - Extend `DbNewsItemByIdRow` + `NewsItemDto` mapping to include `filtered: 0 | 1`
   - Update `src/modules/publishing/adapters/SqlitePublishingRepo.ts` similarly (it also ensures `news_items` exists).
 
-- [ ] Step 2: Create `news-filtering` module (filters table + CRUD orchestrators)
+- [x] Step 2: Create `news-filtering` module (filters table + CRUD orchestrators)
   - Create module skeleton:
     - `src/modules/news-filtering/public/index.ts`
     - `src/modules/news-filtering/application/*Orchestrator.ts`
