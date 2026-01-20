@@ -5,6 +5,7 @@ export type { DigestPostAssemblerPort } from "../ports/DigestPostAssemblerPort";
 export type { DigestReadPort } from "../ports/DigestReadPort";
 export type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
 export type { MarkdownPublisherPort } from "../ports/MarkdownPublisherPort";
+export type { NewsItemFlagsPort } from "../ports/NewsItemFlagsPort";
 export type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 export type { TextGenerationPort } from "../ports/TextGenerationPort";
 

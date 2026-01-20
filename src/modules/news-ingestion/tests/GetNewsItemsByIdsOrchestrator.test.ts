@@ -19,6 +19,8 @@ describe("GetNewsItemsByIdsOrchestrator", () => {
           published_at: null,
           scraped_at: "2026-01-01T00:00:00.000Z",
           processed: 0,
+          filtered: 0,
+          filters_ids: [],
           media_type: null,
           media_url: null,
         };

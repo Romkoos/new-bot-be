@@ -5,6 +5,13 @@ import { PublishedAtResolver } from "../../modules/news-ingestion/adapters/Publi
 import { Sha256Hasher } from "../../modules/news-ingestion/adapters/Sha256Hasher";
 import { SqliteNewsRepo } from "../../modules/news-ingestion/adapters/SqliteNewsRepo";
 import {
+  CreateFilterOrchestrator,
+  DeleteFilterOrchestrator,
+  FiltersCatalogService,
+  ListFiltersOrchestrator,
+  UpdateFilterOrchestrator,
+} from "../../modules/news-filtering/public";
+import {
   CreateLlmModelOrchestrator,
   CreateLlmOrchestrator,
   DeleteLlmModelOrchestrator,
@@ -43,6 +50,12 @@ export interface AppContainer {
   readonly ingest: {
     readonly news: NewsIngestOrch;
     readonly getNewsItemsByIds: GetNewsItemsByIdsOrchestrator;
+  };
+  readonly filters: {
+    readonly listFilters: ListFiltersOrchestrator;
+    readonly createFilter: CreateFilterOrchestrator;
+    readonly updateFilter: UpdateFilterOrchestrator;
+    readonly deleteFilter: DeleteFilterOrchestrator;
   };
   readonly publishing: {
     readonly publishDigest: PublishDigestOrchestrator;
@@ -102,6 +115,13 @@ export function buildContainer(): AppContainer {
   });
   const getNewsItemsByIds = new GetNewsItemsByIdsOrchestrator(newsRepository);
 
+  // News filtering module wiring
+  const filtersCatalog = new FiltersCatalogService({ sqlitePath, timestampFormatter });
+  const listFilters = new ListFiltersOrchestrator(filtersCatalog);
+  const createFilter = new CreateFilterOrchestrator(filtersCatalog);
+  const updateFilter = new UpdateFilterOrchestrator(filtersCatalog);
+  const deleteFilter = new DeleteFilterOrchestrator(filtersCatalog);
+
   // Publishing module wiring
   const publishingRepo = new SqlitePublishingRepo({ sqlitePath, timestampFormatter });
   // Ensure the LLM catalog tables exist and are seeded on boot (idempotent).
@@ -112,6 +132,8 @@ export function buildContainer(): AppContainer {
   const publisher = new TelegramMarkdownPublisher({ env: process.env });
   const publishDigest = new PublishDigestOrchestrator({
     newsSelection: publishingRepo,
+    newsItemFlags: publishingRepo,
+    listFiltersOrchestrator: listFilters,
     digestRepository: publishingRepo,
     textGenerator,
     llmConfigService,
@@ -146,6 +168,12 @@ export function buildContainer(): AppContainer {
     ingest: {
       news,
       getNewsItemsByIds,
+    },
+    filters: {
+      listFilters,
+      createFilter,
+      updateFilter,
+      deleteFilter,
     },
     publishing: {
       publishDigest,
