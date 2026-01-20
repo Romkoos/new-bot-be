@@ -16,6 +16,7 @@ type DbNewsItemByIdRow = {
   readonly published_at: string | null;
   readonly scraped_at: string;
   readonly processed: 0 | 1;
+  readonly filtered: 0 | 1;
   readonly media_type: "video" | "image" | null;
   readonly media_url: string | null;
 };
@@ -97,6 +98,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
         published_at,
         scraped_at,
         processed,
+        filtered,
         media_type,
         media_url
       FROM news_items
@@ -110,6 +112,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
     return rows.map((r) => ({
       ...r,
       processed: r.processed === 1 ? 1 : 0,
+      filtered: r.filtered === 1 ? 1 : 0,
       media_type: r.media_type === "video" || r.media_type === "image" ? r.media_type : null,
     }));
   }
@@ -126,6 +129,7 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
         scraped_at TEXT NOT NULL,
         payload_json TEXT NOT NULL,
         processed INTEGER NOT NULL DEFAULT 0,
+        filtered INTEGER NOT NULL DEFAULT 0,
         media_type TEXT NULL,
         media_url TEXT NULL
       );
@@ -137,6 +141,12 @@ export class SqliteNewsRepo implements NewsItemsRepositoryPort {
       table: "news_items",
       column: "processed",
       alterSql: `ALTER TABLE news_items ADD COLUMN processed INTEGER NOT NULL DEFAULT 0;`,
+    });
+
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "filtered",
+      alterSql: `ALTER TABLE news_items ADD COLUMN filtered INTEGER NOT NULL DEFAULT 0;`,
     });
 
     this.ensureColumnExists({

@@ -15,6 +15,14 @@ export interface NewsItemDto {
   readonly published_at: string | null;
   readonly scraped_at: string;
   readonly processed: 0 | 1;
+  /**
+   * Whether this item was matched by any configured regex filter.
+   *
+   * Notes:
+   * - This mirrors the SQLite `news_items.filtered` column (0/1).
+   * - Filtered items are excluded from digest generation, but still become `processed = 1`.
+   */
+  readonly filtered: 0 | 1;
   readonly media_type: "video" | "image" | null;
   readonly media_url: string | null;
 }

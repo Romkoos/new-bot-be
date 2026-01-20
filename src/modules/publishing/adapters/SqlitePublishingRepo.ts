@@ -211,6 +211,7 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
         scraped_at TEXT NOT NULL,
         payload_json TEXT NOT NULL,
         processed INTEGER NOT NULL DEFAULT 0,
+        filtered INTEGER NOT NULL DEFAULT 0,
         media_type TEXT NULL,
         media_url TEXT NULL
       );
@@ -222,6 +223,12 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
       table: "news_items",
       column: "processed",
       alterSql: `ALTER TABLE news_items ADD COLUMN processed INTEGER NOT NULL DEFAULT 0;`,
+    });
+
+    this.ensureColumnExists({
+      table: "news_items",
+      column: "filtered",
+      alterSql: `ALTER TABLE news_items ADD COLUMN filtered INTEGER NOT NULL DEFAULT 0;`,
     });
 
     this.ensureColumnExists({

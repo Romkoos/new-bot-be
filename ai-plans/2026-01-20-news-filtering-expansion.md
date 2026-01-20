@@ -52,7 +52,7 @@ Implement regex-based filtering that:
   - Update `master`
   - Create a new branch from updated `master` (e.g. `feat/news-filters`)
 
-- [ ] Step 1: Add DB schema support for `news_items.filtered`
+- [x] Step 1: Add DB schema support for `news_items.filtered`
   - Update `src/modules/news-ingestion/adapters/SqliteNewsRepo.ts`:
     - Add `filtered` column to `CREATE TABLE IF NOT EXISTS news_items (...)`
     - Add `ensureColumnExists` call for `filtered` with `DEFAULT 0`
