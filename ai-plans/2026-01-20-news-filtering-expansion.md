@@ -104,7 +104,7 @@ Implement regex-based filtering that:
     - Continue digest using only candidates.
     - Keep existing behavior for candidates: they are marked processed only when the pending digest is persisted (atomic with digest insert).
 
-- [ ] Step 4: DI wiring
+- [x] Step 4: DI wiring
   - Update `src/app/di/container.ts`:
     - Instantiate `SqliteFiltersRepo`
     - Wire filter orchestrators under a new `container.filters` namespace

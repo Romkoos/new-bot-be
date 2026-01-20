@@ -5,11 +5,14 @@ import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoT
 import type { DigestDto } from "../dto/DigestDto";
 import type { DigestReadPort } from "../ports/DigestReadPort";
 import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
+import type { NewsItemFlagsPort } from "../ports/NewsItemFlagsPort";
 import type { NewsSelectionPort } from "../ports/NewsSelectionPort";
 
 type DbNewsItemRow = {
   readonly id: number;
   readonly raw_text: string;
+  readonly filtered: 0 | 1;
+  readonly filters_ids: string;
 };
 
 type DbDigestRow = {
@@ -38,7 +41,7 @@ type TableInfoRow = {
  * Schema strategy:
  * - This repo follows the project pattern: schema is ensured/extended on initialization.
  */
-export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepositoryPort, DigestReadPort {
+export class SqlitePublishingRepo implements NewsSelectionPort, NewsItemFlagsPort, DigestRepositoryPort, DigestReadPort {
   private readonly db: Database.Database;
   private readonly timestampFormatter: UtcIsoTimestampFormatterPort;
 
@@ -70,7 +73,9 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
       `
       SELECT
         id,
-        raw_text
+        raw_text,
+        filtered,
+        filters_ids
       FROM news_items
       WHERE processed = 0
       ORDER BY id ASC
@@ -80,7 +85,39 @@ export class SqlitePublishingRepo implements NewsSelectionPort, DigestRepository
     const rows = stmt.all();
 
     // Return JSON strings so the orchestrator can deterministically recover `id` for traceability.
-    return rows.map((r) => JSON.stringify({ id: r.id, rawText: r.raw_text }));
+    return rows.map((r) =>
+      JSON.stringify({
+        id: r.id,
+        rawText: r.raw_text,
+        filtered: r.filtered === 1 ? 1 : 0,
+        filtersIds: parseFiltersIdsJson(r.filters_ids),
+      }),
+    );
+  }
+
+  public async markItemsFilteredAndProcessed(input: {
+    readonly items: ReadonlyArray<{ readonly id: number; readonly filterIds: ReadonlyArray<number> }>;
+  }): Promise<void> {
+    if (input.items.length === 0) return;
+
+    const stmt = this.db.prepare(
+      `
+      UPDATE news_items
+      SET
+        processed = 1,
+        filtered = 1,
+        filters_ids = ?
+      WHERE id = ?
+      `.trim(),
+    );
+
+    const tx = this.db.transaction((items: typeof input.items) => {
+      for (const item of items) {
+        stmt.run(JSON.stringify(item.filterIds), item.id);
+      }
+    });
+
+    tx(input.items);
   }
 
   /**
@@ -312,3 +349,16 @@ function ensureSqliteParentDirectory(sqlitePath: string): void {
   mkdirSync(dir, { recursive: true });
 }
 
+function parseFiltersIdsJson(value: string): ReadonlyArray<number> {
+  try {
+    const parsed: unknown = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const out: number[] = [];
+    for (const v of parsed) {
+      if (typeof v === "number" && Number.isInteger(v) && v > 0) out.push(v);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}

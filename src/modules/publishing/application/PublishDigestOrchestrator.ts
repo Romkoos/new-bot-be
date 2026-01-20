@@ -1,4 +1,4 @@
-﻿import type { Logger } from "../../../shared/observability/logger";
+import type { Logger } from "../../../shared/observability/logger";
 import type { PublishDigestResult } from "../dto/PublishDigestResult";
 import type { DigestPostAssemblerPort } from "../ports/DigestPostAssemblerPort";
 import type { DigestRepositoryPort } from "../ports/DigestRepositoryPort";
