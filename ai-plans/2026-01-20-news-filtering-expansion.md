@@ -48,7 +48,7 @@ Implement regex-based filtering that:
     - If no remaining items, early-exit without creating a digest (but filtered items were already marked processed).
 
 ## Implementation Steps
-- [ ] Step 0: Branch prep (per workflow)
+- [x] Step 0: Branch prep (per workflow)
   - Update `master`
   - Create a new branch from updated `master` (e.g. `feat/news-filters`)
 
