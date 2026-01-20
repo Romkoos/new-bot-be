@@ -19,11 +19,13 @@
 Implement regex-based filtering that:
 - Persists filters in a dedicated SQLite `filters` table (CRUD via REST).
 - Persists per-item derived state in `news_items.filtered` (0/1).
+- Persists per-item traceability in `news_items.filters_ids` (JSON array of filter ids that matched).
 - Ensures digest creation uses only unfiltered items, while filtered items are still marked `processed = 1` so they stop reappearing.
 
 ## Technical Approach
 - **Schema**
   - Add `news_items.filtered INTEGER NOT NULL DEFAULT 0`.
+  - Add `news_items.filters_ids TEXT NOT NULL DEFAULT '[]'` (JSON array of integers).
   - Add `filters` table (SQLite) with minimal admin-friendly fields:
     - `id INTEGER PRIMARY KEY AUTOINCREMENT`
     - `created_at TEXT NOT NULL`
@@ -43,6 +45,7 @@ Implement regex-based filtering that:
     - Load all filters.
     - For each item, if any filter matches:
       - set `filtered = 1`
+      - set `filters_ids = '[...]'` (JSON array of matched filter ids, deterministic order)
       - mark `processed = 1` (immediately; they should never be digested)
     - Remaining items (`filtered = 0`) proceed through the existing digest pipeline.
     - If no remaining items, early-exit without creating a digest (but filtered items were already marked processed).
@@ -57,6 +60,14 @@ Implement regex-based filtering that:
     - Add `filtered` column to `CREATE TABLE IF NOT EXISTS news_items (...)`
     - Add `ensureColumnExists` call for `filtered` with `DEFAULT 0`
     - Extend `DbNewsItemByIdRow` + `NewsItemDto` mapping to include `filtered: 0 | 1`
+  - Update `src/modules/publishing/adapters/SqlitePublishingRepo.ts` similarly (it also ensures `news_items` exists).
+
+- [ ] Step 1b: Add DB schema support for `news_items.filters_ids`
+  - Update `src/modules/news-ingestion/adapters/SqliteNewsRepo.ts`:
+    - Add `filters_ids` column to `CREATE TABLE IF NOT EXISTS news_items (...)`
+    - Add `ensureColumnExists` call for `filters_ids` with `DEFAULT '[]'`
+    - Extend `DbNewsItemByIdRow` + `NewsItemDto` mapping to include `filters_ids`
+      - Representation: store JSON in SQLite `TEXT`, but return `filters_ids` as `ReadonlyArray<number>` (parsed from JSON) or as a string (TBD; keep API consistent).
   - Update `src/modules/publishing/adapters/SqlitePublishingRepo.ts` similarly (it also ensures `news_items` exists).
 
 - [x] Step 2: Create `news-filtering` module (filters table + CRUD orchestrators)
@@ -79,6 +90,7 @@ Implement regex-based filtering that:
 - [ ] Step 3: Publishing flow — apply filters and mark processed for filtered items
   - Extend publishing SQLite adapter with persistence-only helpers:
     - `markNewsItemsFiltered({ ids })` (set `filtered = 1` for ids)
+    - `setNewsItemsFiltersIds({ idToFilterIds })` (set `filters_ids` JSON array per item)
     - `markNewsItemsProcessed({ ids })` (set `processed = 1` for ids)
     - (both must be no-ops on empty arrays)
   - Update `PublishDigestOrchestrator`:
@@ -87,6 +99,7 @@ Implement regex-based filtering that:
     - Partition ids into `filteredIds` vs `candidateIds`.
     - Persist flags:
       - set `filtered=1` for filteredIds
+      - set `filters_ids` for filtered items (matched filter ids)
       - set `processed=1` for filteredIds
     - Continue digest using only candidates.
     - Keep existing behavior for candidates: they are marked processed only when the pending digest is persisted (atomic with digest insert).
