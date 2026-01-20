@@ -87,7 +87,7 @@ Implement regex-based filtering that:
   - Result contract style:
     - Mirror publishing catalog pattern: `{ ok: true, value } | { ok: false, error }` for predictable API mapping.
 
-- [ ] Step 3: Publishing flow — apply filters and mark processed for filtered items
+- [x] Step 3: Publishing flow — apply filters and mark processed for filtered items
   - Extend publishing SQLite adapter with persistence-only helpers:
     - `markNewsItemsFiltered({ ids })` (set `filtered = 1` for ids)
     - `setNewsItemsFiltersIds({ idToFilterIds })` (set `filters_ids` JSON array per item)
