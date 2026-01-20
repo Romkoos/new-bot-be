@@ -110,7 +110,7 @@ Implement regex-based filtering that:
     - Wire filter orchestrators under a new `container.filters` namespace
     - Inject `container.filters.listFilters` into `PublishDigestOrchestrator` (as a dependency)
 
-- [ ] Step 5: API endpoints
+- [x] Step 5: API endpoints
   - Add `src/app/api/routes/filtersRoute.ts`:
     - `POST /filters` (create)
     - `PUT /filters/:id` (update)
