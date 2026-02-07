@@ -39,6 +39,35 @@ The demo module is `health`, whose use-case returns:
   - `dto/` — DTOs used in public contracts
   - `public/index.ts` — **only allowed import surface** for other layers/modules
 
+```mermaid
+flowchart LR
+  subgraph App[AppLayer_src_app]
+    API[API]
+    Cron[Cron]
+    CLI[CLI]
+    DI[DI_container]
+  end
+
+  subgraph Modules[Modules_src_modules]
+    Orch[Orchestrator_application]
+    Ports[Ports_interfaces]
+    Adapters[Adapters_implement_ports]
+    DTOs[DTOs_public_contracts]
+    PublicAPI[PublicAPI_public_index_ts]
+  end
+
+  API --> DI
+  Cron --> DI
+  CLI --> DI
+  DI --> Orch
+  Orch --> Ports
+  Ports --> Adapters
+  Orch --> DTOs
+  PublicAPI --> Orch
+  PublicAPI --> DTOs
+  PublicAPI --> Ports
+```
+
 ## Golden rules (strict)
 
 ### Orchestrators

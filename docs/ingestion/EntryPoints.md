@@ -19,6 +19,24 @@ It focuses on lifecycle and responsibilities:
 - DI container: `src/app/di/container.ts`
 - Orchestrator: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 
+```mermaid
+flowchart LR
+  subgraph CronFlow[Cron_PM2_cron_restart]
+    PM2[PM2_cron_restart] --> CronStart[Start_newsIngestCron]
+    CronStart --> Build[buildContainer]
+    Build --> RunOrch[NewsIngestOrch_run_dryRun_false]
+    RunOrch --> Idle[Idle_until_terminated]
+  end
+
+  subgraph CliFlow[CLI_Manual]
+    User[Developer] --> CliStart[Start_newsIngestCli]
+    CliStart --> Parse[Parse_flags_and_env_overrides]
+    Parse --> Build2[buildContainer]
+    Build2 --> RunOrch2[NewsIngestOrch_run_dryRun_optional]
+    RunOrch2 --> Exit[process_exit_0_or_1]
+  end
+```
+
 ## Entry-point boundary rules (must hold)
 
 Entry points must be **thin**:

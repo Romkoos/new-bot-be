@@ -90,6 +90,18 @@ Notes:
 - This is a pure read method.
 - It intentionally contains no business rules beyond “does this hash exist”.
 
+```mermaid
+flowchart LR
+  Items[Candidate_items] --> Hashes[Stable_hashes]
+  Hashes --> Find[findExistingHashes]
+  Find --> Existing[Existing_hash_set]
+  Existing --> Filter[Filter_out_duplicates]
+  Filter --> New[New_items_only]
+  New --> Insert[insertMany_INSERT_OR_IGNORE]
+  Insert --> Unique[UNIQUE_hash_backstop]
+  Unique --> Stored[Rows_inserted_or_ignored]
+```
+
 ### `insertMany(items)`
 
 Purpose:

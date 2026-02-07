@@ -81,6 +81,39 @@ It also exposes a shared logger:
 
 - `logger` from `src/shared/observability/logger.ts`
 
+```mermaid
+flowchart LR
+  subgraph EntryPoints[EntryPoints_src_app]
+    API[API]
+    Cron[Cron]
+    CLI[CLI]
+  end
+
+  subgraph DI[CompositionRoot_src_app_di]
+    Build[buildContainer]
+    ReadCfg[readIngestionConfig]
+    MkScraper[new_PwMakoScraper]
+    MkHasher[new_Sha256Hasher]
+    MkRepo[new_SqliteNewsRepo]
+    MkOrch[new_NewsIngestOrch]
+  end
+
+  Orch[Orchestrator_Instance]
+
+  API --> Build
+  Cron --> Build
+  CLI --> Build
+
+  Build --> ReadCfg
+  ReadCfg --> MkScraper
+  Build --> MkHasher
+  Build --> MkRepo
+  MkScraper --> MkOrch
+  MkHasher --> MkOrch
+  MkRepo --> MkOrch
+  MkOrch --> Orch
+```
+
 ## Wiring: Health module
 
 Health is a small example of hexagonal wiring:

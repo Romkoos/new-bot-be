@@ -8,6 +8,41 @@ This folder documents the runtime REST API exposed by the Express entry point:
 
 Entry-point rule reminder: route handlers are infrastructure-only; they validate input and call orchestrators from the DI container.
 
+```mermaid
+flowchart LR
+  subgraph API[Express_API_routes]
+    Filters[/api/filters]
+    NewsByIds["GET_/api/news-items/by-ids"]
+    Digests[/api/digests]
+    LlmCfg["/api/llm-config"]
+    Llms["/api/llms_and_models"]
+  end
+
+  DI[buildContainer]
+
+  subgraph Modules[UseCases_by_module]
+    Filtering[news_filtering_orchestrators]
+    Ingestion[news_ingestion_orchestrators]
+    Publishing[publishing_orchestrators]
+  end
+
+  subgraph DB[SQLite_tables]
+    FiltersTbl[filters]
+    NewsTbl[news_items]
+    DigestsTbl[digests]
+    LlmCfgTbl[llm_config]
+    LlmsTbl[llms]
+    ModelsTbl[llm_models]
+  end
+
+  Filters --> DI --> Filtering --> FiltersTbl
+  NewsByIds --> DI --> Ingestion --> NewsTbl
+  Digests --> DI --> Publishing --> DigestsTbl
+  LlmCfg --> DI --> Publishing --> LlmCfgTbl
+  Llms --> DI --> Publishing --> LlmsTbl
+  Llms --> DI --> Publishing --> ModelsTbl
+```
+
 ## Endpoints
 
 ### `GET /api/llm-config`
@@ -214,6 +249,8 @@ Returned fields (when found):
 - `published_at`
 - `scraped_at`
 - `processed`
+- `filtered`
+- `filters_ids`
 - `media_type`
 - `media_url`
 
@@ -245,9 +282,47 @@ Response:
     "published_at": null,
     "scraped_at": "2026-01-14T09:15:00.000Z",
     "processed": 1,
+    "filtered": 1,
+    "filters_ids": [3],
     "media_type": "video",
     "media_url": "https://example.com/video.mp4"
   }
 ]
 ```
+
+### `GET /api/filters`
+
+Returns all configured regex filters.
+
+**Response shape**
+
+Array of:
+- `id` — integer
+- `created_at` — ISO string
+- `updated_at` — ISO string
+- `name` — string (unique)
+- `pattern` — string (regex source)
+
+### `POST /api/filters`
+
+Creates a regex filter.
+
+**Request body**
+
+- `name` — non-empty string (unique)
+- `pattern` — non-empty string (JavaScript regex source; validated with Unicode flag)
+
+### `PUT /api/filters/:id`
+
+Updates a regex filter.
+
+**Request body**
+
+At least one of:
+- `name` — non-empty string
+- `pattern` — non-empty string
+
+### `DELETE /api/filters/:id`
+
+Deletes a regex filter.
 

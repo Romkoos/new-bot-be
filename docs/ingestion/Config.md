@@ -21,6 +21,27 @@ Consumption (DI + entry points):
 - `src/app/cron/newsIngestCron.ts`
 - `src/app/cli/newsIngestCli.ts`
 
+```mermaid
+flowchart LR
+  Env[process_env] --> ReadCfg[readIngestionConfig]
+  ReadCfg --> ScraperCfg[IngestScraperRuntimeConfig]
+  ReadCfg --> CronSchedule[cronSchedule]
+
+  subgraph DI[DI_buildContainer]
+    MkScraper[new_PwMakoScraper]
+    MkHasher[new_Sha256Hasher]
+    MkRepo[new_SqliteNewsRepo]
+    MkOrch[new_NewsIngestOrch]
+  end
+
+  ScraperCfg --> MkScraper
+  Env -->|NEWS_BOT_SQLITE_PATH| MkRepo
+  MkScraper --> MkOrch
+  MkHasher --> MkOrch
+  MkRepo --> MkOrch
+  MkOrch --> Orch[NewsIngestOrch_Instance]
+```
+
 ## Principles
 
 ### Module owns its config contract

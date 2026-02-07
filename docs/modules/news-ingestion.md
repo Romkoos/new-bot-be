@@ -32,6 +32,16 @@ It also owns the ingestion runtime configuration contract via:
 - `INGEST_ENV`
 - `readIngestionConfig(env)`
 
+```mermaid
+flowchart LR
+  Orch[NewsIngestOrch] --> Scrape[NewsScraperPort_scrapeFirstFive]
+  Orch --> Normalize[Normalize_for_hash_stability]
+  Orch --> Hash[NewsItemHasherPort_hashNormalized]
+  Orch --> Repo[NewsItemsRepositoryPort]
+  Repo --> Find[findExistingHashes]
+  Repo --> Insert[insertMany]
+```
+
 ## Public API (`src/modules/news-ingestion/public/index.ts`)
 
 This is the only allowed import surface for:
