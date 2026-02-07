@@ -45,6 +45,24 @@ No deep imports into module internals from `src/app/*` or other modules.
 
 The orchestrator implements this exact sequence:
 
+```mermaid
+flowchart LR
+  Start[Start_and_Timing] --> Scrape[Scrape_scrapeFirstFive]
+  Scrape --> Normalize[Normalize_for_Hash_Stability]
+  Normalize --> Hash[Hash_hashNormalized]
+  Hash --> Query[Filter_findExistingHashes]
+  Query --> Filter[Filter_out_Duplicates]
+  Filter --> NoNew{{"newItemsCount==0?"}}
+  NoNew -->|Yes| EarlyExit[EarlyExit_no_new_items]
+  NoNew -->|No| ToStore[Convert_to_NewNewsItemToStore]
+  ToStore --> DryRun{{"dryRun?"}}
+  DryRun -->|Yes| DoneDry[Return_storedCount_0]
+  DryRun -->|No| Persist[Persist_insertMany]
+  Persist --> Done[Log_done_and_Return_Result]
+  EarlyExit --> Done
+  DoneDry --> Done
+```
+
 ### 0) Start + timing
 
 It captures wall-clock start time and logs:

@@ -7,6 +7,16 @@
 3. [Ingestion](./ingestion/README.md)
 4. [API](./api/README.md)
 
+```mermaid
+flowchart LR
+  Overview[Overview] --> Architecture[Architecture]
+  Architecture --> Ingestion[Ingestion_Topic]
+  Ingestion --> API[API_Reference]
+
+  Overview --> System[System_Docs]
+  Architecture --> Modules[Module_Docs]
+```
+
 ## Structure
 
 ### System
@@ -18,6 +28,8 @@
 - [Modules index](./modules/README.md)
 - [`health`](./modules/health.md)
 - [`news-ingestion`](./modules/news-ingestion.md)
+- [`news-filtering`](./modules/news-filtering.md)
+- [`news-pipeline`](./modules/news-pipeline.md)
 - [`publishing`](./modules/publishing.md)
 
 ### Ingestion (topic)

@@ -134,6 +134,40 @@ The runtime shape is always:
 
 **Entry-point → DI container → Orchestrator → Ports → Adapters**
 
+```mermaid
+flowchart LR
+  subgraph Entry[EntryPoints_src_app]
+    Route[API_RouteHandler]
+    CronJob[Cron_EntryPoint]
+    CliJob[CLI_EntryPoint]
+  end
+
+  subgraph DI[CompositionRoot_src_app_di]
+    Container[buildContainer]
+  end
+
+  subgraph Module[ModuleBoundary_src_modules_someModule]
+    PublicAPI[public_index_ts]
+    Orch[application_Orchestrator]
+    Ports[ports_Interfaces]
+    Adapters[adapters_Implementations]
+  end
+
+  Route --> Container
+  CronJob --> Container
+  CliJob --> Container
+  Container --> Orch
+  Orch --> Ports
+  Ports --> Adapters
+
+  Route -->|AllowedImport| PublicAPI
+  CronJob -->|AllowedImport| PublicAPI
+  CliJob -->|AllowedImport| PublicAPI
+
+  Route -.->|ForbiddenDeepImport| Adapters
+  CronJob -.->|ForbiddenDeepImport| Adapters
+```
+
 ### API flow: `GET /api/health`
 
 1. `src/app/api/server.ts` builds the container with `buildContainer()`.

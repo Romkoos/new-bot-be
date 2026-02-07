@@ -23,6 +23,15 @@ The module owns the use-case:
 
 It does not own persistence or scraping; it only uses time.
 
+```mermaid
+flowchart LR
+  Entry[EntryPoint_API_or_Cron] --> DI[buildContainer]
+  DI --> Orch[GetHealthStatusOrchestrator]
+  Orch --> Port[TimePort]
+  Port --> Adapter[SystemTimeAdapter]
+  Orch --> DTO[GetHealthStatusResponse]
+```
+
 ## Public API (`src/modules/health/public/index.ts`)
 
 This is the only allowed import surface for app entry points and other modules.

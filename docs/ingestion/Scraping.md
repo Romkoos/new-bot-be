@@ -40,6 +40,20 @@ If the site changes structure or class names, scraping may fail with selector er
 
 ### `scrapeFirstFive()`
 
+```mermaid
+flowchart LR
+  Start[Start] --> Ctx[Create_browser_context_createCtx]
+  Ctx --> Page[Open_page]
+  Page --> Goto[page_goto_URL]
+  Goto --> FindBtn[findDrawerButtonStrict]
+  FindBtn --> Click[Click_drawer_button]
+  Click --> Wait[Wait_for_desktop_drawer_news]
+  Wait --> Extract[Extract_first5_evaluateAll]
+  Extract --> Resolve[Resolve_publishedAt_HH_mm_to_ISO_or_null]
+  Resolve --> Close[Finally_close_page_and_context]
+  Close --> Return[Return_ScrapedNewsItem_array]
+```
+
 1. Create a Playwright browser context (persistent or non-persistent).
 2. Open a new page.
 3. `page.goto(URL)` using `waitUntil: "domcontentloaded"` and a timeout.

@@ -49,6 +49,23 @@ The key invariant:
 - `src/app/*` is infrastructure-only.
 - All business flow ordering is owned by orchestrators in `src/modules/*/application`.
 
+```mermaid
+flowchart LR
+  subgraph EntryPoints[EntryPoints]
+    API[API_Process]
+    Cron[Cron_Process]
+    CLI[CLI_Process]
+  end
+
+  DI[DI_buildContainer]
+  Orch[UseCase_Orchestrator]
+  Out[Output_JSON_or_Logs]
+
+  API --> DI --> Orch --> Out
+  Cron --> DI --> Orch --> Out
+  CLI --> DI --> Orch --> Out
+```
+
 ## API process lifecycle
 
 ### Startup
@@ -98,6 +115,22 @@ This is implemented by:
 - `src/app/cron/pm2RunGate.ts` (prevents individual cron apps from running their jobs on the initial PM2 start)
 - `src/app/cron/pm2BootStamp.ts` (writes a short-lived stamp under `PM2_HOME` so the run-gate works on Windows where `pm2_env` is not injected)
 - `ecosystem.config.cjs` (`cron:boot-sequence` is started immediately by PM2)
+
+```mermaid
+flowchart LR
+  PM2[PM2_start_or_restart] --> BootEntry[cron_boot_sequence_entry]
+  BootEntry --> BootOrch[BootSequenceOrchestrator]
+  BootOrch --> HealthOrch[GetHealthStatusOrchestrator]
+  BootOrch --> IngestOrch[NewsIngestOrch]
+  BootOrch --> PublishOrch[PublishDigestOrchestrator]
+
+  PM2 --> CronApps[Cron_apps_restart]
+  CronApps --> Gate[pm2RunGate]
+  Gate -->|InitialStart_Skip| Skip[SkipTick]
+  Gate -->|ScheduledRestart_Run| Run[RunOneTick]
+  Run --> DI[buildContainer]
+  DI --> UseCase[OneOrchestratorPerJob]
+```
 
 ### Runtime ticks
 

@@ -51,6 +51,22 @@ File:
 
 This orchestrator owns the full use-case ordering:
 
+```mermaid
+flowchart LR
+  Select[Select_unprocessed_news_items] --> LoadFilters[ListFiltersOrchestrator_news_filtering]
+  LoadFilters --> Match[Match_filters_against_raw_text]
+  Match --> Finalize[Mark_filtered_and_processed]
+  Match --> Candidates[Keep_digest_candidates]
+  Candidates --> NoCandidates{{"No_candidates?"}}
+  NoCandidates -->|Yes| EarlyExitAllFiltered[EarlyExit_all_items_filtered]
+  NoCandidates -->|No| LoadCfg[Load_llm_config]
+  LoadCfg --> Generate[Generate_digest_via_TextGenerationPort]
+  Generate --> Normalize[Normalize_digest_text]
+  Normalize --> PersistPending[Persist_pending_digest_and_mark_items_processed]
+  PersistPending --> Publish[Publish_via_MarkdownPublisherPort]
+  Publish --> MarkPublished[Mark_digest_published]
+```
+
 1. Select rows from `news_items` where `processed = 0` (`ORDER BY id ASC`).
 2. Load all configured regex filters from the `news-filtering` module.
 3. For each selected item:
