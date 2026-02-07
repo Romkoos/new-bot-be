@@ -15,9 +15,9 @@ Before implementing ANY task, follow this mandatory workflow:
 
 ### Step 0: Branch Preparation
 Before starting ANY task:
-1. Create a **new branch** based on `master`
-2. Ensure `master` is **updated to the latest version**
-3. The task branch MUST be created **from the updated `master`**
+1. Create a **new branch** based on `main`
+2. Ensure `main` is **updated to the latest version**
+3. The task branch MUST be created **from the updated `main`**
 
 ---
 

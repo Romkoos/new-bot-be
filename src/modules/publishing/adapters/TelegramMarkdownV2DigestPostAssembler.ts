@@ -8,7 +8,7 @@ const FOOTER_TITLE = "Йалла балаган | Новости";
  * Assembles a Telegram-ready digest post in `MarkdownV2`.
  *
  * Output shape:
- * - escaped header title
+ * - escaped header title (skipped when there is exactly one item)
  * - blank line
  * - escaped bulleted list (each item is one digest entry)
  * - blank line
@@ -20,20 +20,25 @@ const FOOTER_TITLE = "Йалла балаган | Новости";
  */
 export class TelegramMarkdownV2DigestPostAssembler implements DigestPostAssemblerPort {
   public assemblePost(input: { readonly items: ReadonlyArray<string> }): string {
-    const header = escapeMdV2(HEADER_TITLE);
-
-    const items = input.items
+    const normalizedItems = input.items
       .map((x) => x.trim())
       .filter((x) => x.length > 0)
-      .map((x) => `\\- ${escapeMdV2(x)}\n`);
+      .map((x) => `\\- ${escapeMdV2(x)}`);
 
+    const shouldIncludeHeader = normalizedItems.length !== 1;
     const footer = buildFooter();
 
-    // Keep formatting stable and predictable for debugging.
-    if (items.length === 0) {
-      return `${header}\n\n${footer}`.trim();
+    const sections: Array<string> = [];
+    if (shouldIncludeHeader) {
+      sections.push(escapeMdV2(HEADER_TITLE));
     }
-    return `${header}\n\n${items.join("\n")}\n\n${footer}`.trim();
+    if (normalizedItems.length > 0) {
+      sections.push(normalizedItems.join("\n"));
+    }
+    sections.push(footer);
+
+    // Keep formatting stable and predictable for debugging.
+    return sections.join("\n\n").trim();
   }
 }
 
