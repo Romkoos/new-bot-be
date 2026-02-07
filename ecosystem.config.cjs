@@ -47,7 +47,7 @@ module.exports = {
     {
       name: "cron:publishing:digest",
       script: "dist/app/cron/publishingCron.js",
-      cron_restart: "0,30 * * * *",
+      cron_restart: "0 */3 * * *",
       autorestart: false,
       watch: false,
       exec_mode: "fork",
@@ -55,7 +55,7 @@ module.exports = {
       time: true,
       env: {
         // Keep the log `{ schedule }` aligned with PM2 `cron_restart`.
-        PUBLISHING_CRON_SCHEDULE: "0,30 * * * *",
+        PUBLISHING_CRON_SCHEDULE: "0 */3 * * *",
       },
     },
   ],

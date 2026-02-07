@@ -18,8 +18,8 @@ export interface PublishingRuntimeConfig {
  */
 export function readPublishingConfig(env: NodeJS.ProcessEnv): PublishingRuntimeConfig {
   return {
-    // Twice per hour (minute 0 and 30).
-    cronSchedule: env[PUBLISH_ENV.CRON_SCHEDULE] ?? "0,30 * * * *",
+    // Every 3 hours (minute 0).
+    cronSchedule: env[PUBLISH_ENV.CRON_SCHEDULE] ?? "0 */3 * * *",
   };
 }
 
