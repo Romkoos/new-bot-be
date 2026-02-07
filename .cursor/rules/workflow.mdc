@@ -86,16 +86,19 @@ After completing EACH task:
    - architectural decisions
    - behavior changes
    - new flows or constraints
+3. Add mermaid diagrams when its relevant
+ 
 Documentation updates are mandatory, not optional
 
 ### Step 5: Completion
-1. Mark all todos as complete in the plan file
-2. Add a `## Completed` section with:
+1. Before completion make checks: run linter, types check and build. Fix the problems before nex steps.
+2. Mark all todos as complete in the plan file
+3. Add a `## Completed` section with:
    - Date completed
    - Any deviations from original plan
    - Follow-up items if any
-3. Create a final commit for the task (use short but informative message)
-4. Push the branch to the remote repository
+4. Create a final commit for the task (use short but informative message)
+5. Push the branch to the remote repository
 
 
 ## Documentation
