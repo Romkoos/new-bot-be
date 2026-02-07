@@ -69,6 +69,9 @@ This orchestrator owns the full use-case ordering:
 ### Logs
 
 - `publishing:digest:start`
+- `publishing:digest:filters:not-configured` (warn; filtering disabled because DI did not provide filters)
+- `publishing:digest:filters:load-failed` (warn; filters could not be loaded, filtering skipped)
+- `publishing:digest:filters:load-threw` (warn; unexpected error while loading filters, filtering skipped)
 - `publishing:digest:early-exit:no-unprocessed-items`
 - `publishing:digest:early-exit:all-items-filtered`
 - `publishing:digest:done`

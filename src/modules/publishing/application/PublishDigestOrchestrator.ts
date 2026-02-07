@@ -47,7 +47,7 @@ export interface PublishDigestDeps {
 export class PublishDigestOrchestrator {
   private readonly newsSelection: NewsSelectionPort;
   private readonly newsItemFlags: NewsItemFlagsPort;
-  private readonly listFiltersOrchestrator?: ListFiltersOrchestrator;
+  private readonly listFiltersOrchestrator: ListFiltersOrchestrator | undefined;
   private readonly textGenerator: TextGenerationPort;
   private readonly llmConfigService: LlmConfigService;
   private readonly publisher: MarkdownPublisherPort;
