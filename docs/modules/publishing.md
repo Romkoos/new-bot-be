@@ -114,8 +114,11 @@ Provider-agnostic interface for publishing Markdown text. The concrete Telegram 
 
 When assembling the digest for Telegram (`MarkdownV2`), the post has:
 
-- a header title (`Йалла дайджест!`) **only when** the digest contains **0 items or 2+ items**
+- a header title (`🚀 Йалла дайджест!`) **only when** the digest contains **0 items or 2+ items**
 - **no** header title when the digest contains **exactly 1 item** (to avoid redundant “digest” framing)
+- header title is rendered **bold**
+- digest items are rendered as a MarkdownV2 bullet list with **exactly one empty line** between items
+- digest item headline (text before the first `.`) is rendered **bold**
 - a footer link to the channel
 
 ### `DigestRepositoryPort`
