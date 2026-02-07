@@ -196,3 +196,18 @@ The publishing flow requires:
 - `TELEGRAM_PARSE_MODE` (recommended: `MarkdownV2`)
 - `TELEGRAM_DISABLE_PREVIEW`
 
+### `PUBLISHING_CRON_SCHEDULE`
+
+Purpose:
+
+- Provide the schedule string for logging/context in cron entry points via `readPublishingConfig(process.env).cronSchedule`.
+
+Default:
+
+- `0 */3 * * *` (every 3 hours at minute 0)
+
+Source of truth:
+
+- PM2 controls **when** the job runs via `ecosystem.config.cjs` → `cron_restart`.
+- `PUBLISHING_CRON_SCHEDULE` must be kept aligned with `cron_restart` to avoid confusing logs.
+
