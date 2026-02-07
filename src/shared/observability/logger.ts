@@ -11,6 +11,11 @@ export interface Logger {
   info(message: string, meta?: unknown): void;
 
   /**
+   * Logs a warning message.
+   */
+  warn(message: string, meta?: unknown): void;
+
+  /**
    * Logs an error message.
    */
   error(message: string, meta?: unknown): void;
@@ -24,6 +29,10 @@ export function createConsoleLogger(): Logger {
     info(message, meta) {
       const line = meta ? `${message} ${safeStringify(meta)}` : message;
       process.stdout.write(`${line}\n`);
+    },
+    warn(message, meta) {
+      const line = meta ? `${message} ${safeStringify(meta)}` : message;
+      process.stderr.write(`${line}\n`);
     },
     error(message, meta) {
       const line = meta ? `${message} ${safeStringify(meta)}` : message;

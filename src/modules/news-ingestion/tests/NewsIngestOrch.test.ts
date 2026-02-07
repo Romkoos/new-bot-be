@@ -7,9 +7,14 @@ import type { InsertManyResult, NewNewsItemToStore, NewsItemsRepositoryPort } fr
 import type { Logger } from "../../../shared/observability/logger";
 import type { UtcIsoTimestampFormatterPort } from "../../../shared/ports/UtcIsoTimestampFormatterPort";
 
-function createTestLogger(): Logger & { readonly info: ReturnType<typeof vi.fn>; readonly error: ReturnType<typeof vi.fn> } {
+function createTestLogger(): Logger & {
+  readonly info: ReturnType<typeof vi.fn>;
+  readonly warn: ReturnType<typeof vi.fn>;
+  readonly error: ReturnType<typeof vi.fn>;
+} {
   return {
     info: vi.fn(),
+    warn: vi.fn(),
     error: vi.fn(),
   };
 }
