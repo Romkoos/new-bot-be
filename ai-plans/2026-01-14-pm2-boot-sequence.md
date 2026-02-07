@@ -1,7 +1,7 @@
 # Task: Run cron jobs once on PM2/system start in strict sequence
 
 ## Context
-- Ticket/Request: On system (or PM2) start, run cron jobs once in strict sequence: health → ingest → publishing. Must work after VM reboot.
+- Ticket/Request: On system (or PM2) start, run cron jobs once in strict sequence: ingest → publishing. Must work after VM reboot.
 - Related docs:
   - `docs/system/Lifecycle.md` (cron lifecycle)
   - `ecosystem.config.cjs` / `ecosystem.config.js` (PM2 scheduling source of truth)
@@ -9,9 +9,8 @@
 ## Objective
 When PM2 starts (including after VM reboot), the system must execute one “startup run” of the existing cron jobs in the strict order:
 
-1. health
-2. ingest
-3. publishing
+1. ingest
+2. publishing
 
 Constraints:
 - Do not reintroduce in-process time scheduling (no `node-cron`, no timers as schedulers).
@@ -24,7 +23,7 @@ Constraints:
   - Uses the DI container and calls the existing orchestrators.
   - Emits the same log event names/payload shapes as the existing cron entry points for consistency.
 - Prevent the individual cron processes from executing their jobs immediately on the **initial PM2 start**, to avoid parallel execution at boot:
-  - In each cron entry point (`healthCron.ts`, `newsIngestCron.ts`, `publishingCron.ts`), detect “first PM2 start” vs “PM2 restart”.
+  - In each cron entry point (`newsIngestCron.ts`, `publishingCron.ts`), detect “first PM2 start” vs “PM2 restart”.
   - When it’s the first start, **do not run the job**; just idle so PM2 `cron_restart` can restart it later.
   - On PM2 restarts (including `cron_restart`), run once per restart as before.
 - Update PM2 ecosystem config to include the boot sequence process:
@@ -32,16 +31,14 @@ Constraints:
 
 ## Implementation Steps
 - [x] Step 1: Confirm how to detect first-start vs restart under PM2 in this environment (PM2 env injection).
-- [ ] Step 2: Add `src/app/cron/bootSequence.ts` to run health → ingest → publishing once and exit.
-- [ ] Step 3: Update `src/app/cron/healthCron.ts` to skip immediate run on first PM2 start (idle only).
+- [ ] Step 2: Add `src/app/cron/bootSequence.ts` to run ingest → publishing once and exit.
 - [ ] Step 4: Update `src/app/cron/newsIngestCron.ts` to skip immediate run on first PM2 start (idle only).
 - [ ] Step 5: Update `src/app/cron/publishingCron.ts` to skip immediate run on first PM2 start (idle only).
 - [ ] Step 6: Update `ecosystem.config.cjs` to add the boot sequence PM2 app (and keep existing schedules unchanged).
 - [ ] Step 7: Update `docs/system/Lifecycle.md` to document the boot sequence behavior and the “idle on first start” rule.
 
 ## Files to Modify/Create
-- `src/app/cron/bootSequence.ts` (new) - run once on PM2/system start: health → ingest → publishing.
-- `src/app/cron/healthCron.ts` - skip job on initial PM2 start; run on restarts; keep idle behavior for `cron_restart`.
+- `src/app/cron/bootSequence.ts` (new) - run once on PM2/system start: ingest → publishing.
 - `src/app/cron/newsIngestCron.ts` - same pattern.
 - `src/app/cron/publishingCron.ts` - same pattern.
 - `ecosystem.config.cjs` - add `cron:boot-sequence` app (no `cron_restart`).

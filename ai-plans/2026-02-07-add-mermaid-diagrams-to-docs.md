@@ -47,7 +47,6 @@ Add **balanced, high-signal** Mermaid diagrams (default: `flowchart LR`) across 
 - [ ] Step 4: Add module/API diagrams + fill missing module docs
   - [ ] `docs/modules/publishing.md` (PublishDigest flow, incl. filtering)
   - [ ] `docs/modules/news-ingestion.md` (compact orchestrator flow)
-  - [ ] `docs/modules/health.md` (tiny module wiring/contract flow)
   - [ ] Create `docs/modules/news-filtering.md` (ownership + orchestrators + contracts + integration)
   - [ ] Create `docs/modules/news-pipeline.md` (boot sequencing ownership + integration)
   - [ ] Update `docs/modules/README.md` (include new modules)
@@ -72,7 +71,6 @@ Add **balanced, high-signal** Mermaid diagrams (default: `flowchart LR`) across 
   - `docs/ingestion/Storage.md`
   - `docs/modules/publishing.md`
   - `docs/modules/news-ingestion.md`
-  - `docs/modules/health.md`
   - `docs/modules/README.md`
   - `docs/api/README.md`
   - `src/modules/news-pipeline/README.md`

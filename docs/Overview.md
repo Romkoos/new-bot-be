@@ -9,11 +9,8 @@ This repository demonstrates a **Node.js + TypeScript backend** using a **Modula
 - **Dependency wiring only in the composition root**
 - **No business logic in API or Cron**
 
-The demo module is `health`, whose use-case returns:
+The repository contains multiple business modules (for example: `news-ingestion`, `publishing`, `news-filtering`, and `news-pipeline`) to demonstrate strict boundaries and wiring rules in a realistic shape.
 
-```json
-{ "status": "ok", "time": "<ISO string>" }
-```
 
 ## Where it lives (entry-points, composition root, modules)
 
@@ -91,74 +88,50 @@ flowchart LR
 Other layers must not import internal module files directly.
 
 Allowed:
-- `import { GetHealthStatusOrchestrator } from "../../modules/health/public";`
+- `import { readIngestionConfig } from "../../modules/news-ingestion/public";`
 
 Forbidden:
-- `import { SystemTimeAdapter } from "../../modules/health/adapters/SystemTimeAdapter";`
+- `import { PwMakoScraper } from "../../modules/news-ingestion/adapters/PwMakoScraper";`
 
 ## Runtime flow (REST API)
 
 ### Request
 
-- `GET /api/health`
+- `GET /api/digests`
 
 ### Step-by-step
 
 1. `src/app/api/server.ts` starts Express and builds the container via `buildContainer()`.
-2. `src/app/api/routes/healthRoute.ts` handles `GET /api/health`.
+2. `src/app/api/routes/digestsRoute.ts` handles `GET /api/digests`.
 3. The handler calls **only** the orchestrator instance from the container.
 4. The orchestrator returns a DTO which is serialized to JSON.
 
 High-signal excerpt:
 
 ```ts
-// src/app/api/routes/healthRoute.ts
-const result = container.health.getHealthStatusOrchestrator.run();
-res.json(result);
+// src/app/api/routes/digestsRoute.ts
+const digests = await container.publishing.listDigests.run();
+res.json(digests);
 ```
 
 ## Runtime flow (Cron)
 
 ### Schedule
 
-- Every minute (`* * * * *`)
+- Scheduling is owned by PM2 via `cron_restart` (see `ecosystem.config.cjs`).
 
 ### Step-by-step
 
-1. `src/app/cron/healthCron.ts` builds the container once via `buildContainer()`.
-2. The scheduled job calls **only** the orchestrator instance and logs the DTO.
+1. `src/app/cron/newsIngestCron.ts` builds the container once via `buildContainer()`.
+2. The job reads the configured schedule label and logs it for observability.
+3. The job calls **only** the orchestrator instance and logs a summarized result.
 
 High-signal excerpt:
 
 ```ts
-// src/app/cron/healthCron.ts
-const result = container.health.getHealthStatusOrchestrator.run();
-container.logger.info("cron:health", result);
-```
-
-## Demo module: `health`
-
-### Use-case
-
-Return `{ status: "ok", time: "<ISO string>" }`.
-
-### Implementation map
-
-- Port: `src/modules/health/ports/TimePort.ts`
-- Adapter: `src/modules/health/adapters/SystemTimeAdapter.ts`
-- Orchestrator: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
-- DTO: `src/modules/health/dto/GetHealthStatusResponse.ts`
-- Public API: `src/modules/health/public/index.ts`
-
-### Contract
-
-The orchestrator returns `GetHealthStatusResponse`:
-
-```ts
-export interface GetHealthStatusResponse {
-  status: "ok";
-  time: string;
-}
+// src/app/cron/newsIngestCron.ts
+const result = await container.ingest.news.run({ dryRun: false });
+container.logger.info("cron:news:ingestion:done", { storedCount: result.storedCount });
 ```
 
 ## Extension points

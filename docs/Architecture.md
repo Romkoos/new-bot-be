@@ -9,11 +9,7 @@ This project is a **backend skeleton** that demonstrates how to structure a Node
 - External dependencies can be swapped with minimal impact.
 - The codebase stays understandable as it grows (clear boundaries and ownership).
 
-There is no database in this demo. The concrete example is a `health` use-case that returns:
-
-```json
-{ "status": "ok", "time": "<ISO string>" }
-```
+The repo includes realistic modules (ingestion, filtering, publishing, boot-time sequencing) and demonstrates how to keep use-cases testable while still integrating with infrastructure like SQLite, Playwright-based scraping, and external publishing APIs.
 
 ## Key decisions (and why)
 
@@ -86,13 +82,13 @@ Other code may import **only** from the Public API.
 Allowed:
 
 ```ts
-import { GetHealthStatusOrchestrator } from "../../modules/health/public";
+import { PublishDigestOrchestrator } from "../../modules/publishing/public";
 ```
 
 Forbidden (deep import into module internals):
 
 ```ts
-import { SystemTimeAdapter } from "../../modules/health/adapters/SystemTimeAdapter";
+import { TelegramMarkdownPublisher } from "../../modules/publishing/adapters/TelegramMarkdownPublisher";
 ```
 
 ## Folder structure and responsibilities
@@ -102,7 +98,7 @@ import { SystemTimeAdapter } from "../../modules/health/adapters/SystemTimeAdapt
 ```
 src/app/
   api/    # Express HTTP entry-point (controllers/routes/server)
-  cron/   # node-cron entry-point (schedulers only)
+  cron/   # PM2-driven cron entry points (runners only)
   di/     # composition root (dependency wiring)
 ```
 
@@ -110,13 +106,10 @@ src/app/
 
 ```
 src/modules/
-  health/
-    public/       # the only import surface for other layers/modules
-    application/  # orchestrators (use-cases)
-    ports/        # interfaces used by orchestrators
-    adapters/     # implementations of ports
-    dto/          # request/response DTOs for public contracts
-    tests/        # unit tests (usually around orchestrators)
+  news-ingestion/
+  news-filtering/
+  news-pipeline/
+  publishing/
 ```
 
 ### `src/shared/` — cross-cutting utilities
@@ -168,72 +161,34 @@ flowchart LR
   CronJob -.->|ForbiddenDeepImport| Adapters
 ```
 
-### API flow: `GET /api/health`
+### API flow: `GET /api/digests`
 
 1. `src/app/api/server.ts` builds the container with `buildContainer()`.
-2. `src/app/api/routes/healthRoute.ts` handles `GET /api/health`.
+2. `src/app/api/routes/digestsRoute.ts` handles `GET /api/digests`.
 3. The route handler calls the orchestrator instance from the container.
 4. The orchestrator returns a DTO. The handler returns it as JSON.
 
 High-signal excerpt (entry-point calls orchestrator only):
 
 ```ts
-// src/app/api/routes/healthRoute.ts
-const result = container.health.getHealthStatusOrchestrator.run();
-res.json(result);
+// src/app/api/routes/digestsRoute.ts
+const digests = await container.publishing.listDigests.run();
+res.json(digests);
 ```
 
-### Cron flow: every minute health log
+### Cron flow: scheduled ingestion run
 
-1. `src/app/cron/healthCron.ts` builds the container once with `buildContainer()`.
-2. `node-cron` schedules a job every minute.
-3. The scheduled callback calls the same orchestrator instance and logs the DTO.
+1. `src/app/cron/newsIngestCron.ts` builds the container once with `buildContainer()`.
+2. PM2 schedules restarts via `cron_restart` (see `ecosystem.config.cjs`).
+3. On each scheduled restart, the entry point calls the orchestrator and logs a summarized result.
 
 High-signal excerpt:
 
 ```ts
-// src/app/cron/healthCron.ts
-const result = container.health.getHealthStatusOrchestrator.run();
-container.logger.info("cron:health", result);
+// src/app/cron/newsIngestCron.ts
+const result = await container.ingest.news.run({ dryRun: false });
+container.logger.info("cron:news:ingestion:done", { storedCount: result.storedCount });
 ```
-
-## Demo module example: `health`
-
-### Use-case: Get health status
-
-The orchestrator is the use-case:
-
-- File: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
-- Method: `run(): GetHealthStatusResponse`
-
-It depends on a port:
-
-- File: `src/modules/health/ports/TimePort.ts`
-- Method: `nowIso(): string`
-
-It returns a DTO:
-
-- File: `src/modules/health/dto/GetHealthStatusResponse.ts`
-
-The time port is implemented by an adapter:
-
-- File: `src/modules/health/adapters/SystemTimeAdapter.ts`
-- Uses: `new Date().toISOString()`
-
-### How wiring happens (DI)
-
-The adapter and orchestrator are instantiated in the composition root:
-
-- File: `src/app/di/container.ts`
-
-Conceptually:
-
-```ts
-const timePort = createSystemTimePort(); // adapter selection happens here
-const orchestrator = new GetHealthStatusOrchestrator(timePort);
-```
-
-Entry-points receive the orchestrator via the container and never `new` it themselves.
 
 ## Practical guidance for adding new behavior
 

@@ -4,7 +4,7 @@
 
 This document explains how ingestion participates in the system runtime via:
 
-- Cron scheduler (`node-cron`)
+- Cron runner (PM2 `cron_restart`)
 - CLI manual trigger
 
 It focuses on lifecycle and responsibilities:

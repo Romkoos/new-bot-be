@@ -21,16 +21,6 @@ module.exports = {
       time: true,
     },
     {
-      name: "cron:health",
-      script: "dist/app/cron/healthCron.js",
-      cron_restart: "* * * * *",
-      autorestart: false,
-      watch: false,
-      exec_mode: "fork",
-      instances: 1,
-      time: true,
-    },
-    {
       name: "cron:news:ingest",
       script: "dist/app/cron/newsIngestCron.js",
       cron_restart: "*/5 * * * *",

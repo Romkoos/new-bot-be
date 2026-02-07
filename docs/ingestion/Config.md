@@ -71,7 +71,7 @@ All ingestion env keys are in:
 - **Key**: `INGEST_ENV.CRON_SCHEDULE`
 - **Used by**: `src/app/cron/newsIngestCron.ts`
 - **Default**: `*/5 * * * *`
-- **Meaning**: Cron expression (node-cron syntax) controlling ingestion schedule.
+- **Meaning**: Cron expression (PM2 `cron_restart`) controlling ingestion schedule.
 
 ### `INGEST_SCRAPER_HEADLESS`
 

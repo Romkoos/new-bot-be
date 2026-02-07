@@ -5,7 +5,7 @@ A Node.js + TypeScript backend skeleton that demonstrates a strict architecture:
 - Modular monolith (`src/modules/*`)
 - Use-case orchestrators (`src/modules/*/application`)
 - Hexagonal architecture inside modules (Ports & Adapters)
-- Express REST API and node-cron as entry-points (`src/app/*`)
+- Express REST API and PM2-driven cron entry points (`src/app/*`)
 - Dependency wiring only in the composition root (`src/app/di`)
 - No business logic in API or Cron
 
@@ -69,17 +69,10 @@ npm run dev
 - **What it does**: starts `src/app/api/server.ts` with `tsx watch` (hot reload).
 - **Use when**: you’re working on HTTP routes or verifying API behavior locally.
 - **Default port**: `3000` (override with `PORT`).
-- **Quick smoke test**: `GET /api/health`.
 
 ### Run “cron jobs” locally (dev mode)
 
 In this repo, “cron” entry points are just Node processes that trigger orchestrators. In production scheduling is owned by **PM2** via `cron_restart` (see `ecosystem.config.cjs`).
-
-- **Health cron (dev/watch)**:
-
-```bash
-npm run dev:cron
-```
 
 - **News ingestion cron entry point (dev/watch)**:
 
@@ -206,7 +199,7 @@ pm2 stop ecosystem.config.js
 pm2 delete ecosystem.config.js
 pm2 list
 pm2 logs
-pm2 logs cron:boot-sequence cron:health cron:news:ingest cron:publishing:digest
+pm2 logs cron:boot-sequence cron:news:ingest cron:publishing:digest
 pm2 save
 pm2 flush
 ```

@@ -26,7 +26,6 @@ flowchart LR
 
 ### Modules
 - [Modules index](./modules/README.md)
-- [`health`](./modules/health.md)
 - [`news-ingestion`](./modules/news-ingestion.md)
 - [`news-filtering`](./modules/news-filtering.md)
 - [`news-pipeline`](./modules/news-pipeline.md)

@@ -15,7 +15,7 @@ Make PM2-based cron execution work end-to-end again:
 
 - Cron apps must actually start and receive `cron_restart` restarts.
 - On PM2 start (including reboot), run **one** deterministic startup sequence:
-  - health → ingest → publishing
+  - ingest → publishing
 - Prevent parallel boot-time runs (i.e., the individual cron apps must not execute their jobs on the initial PM2 start).
 - Keep periodic schedules unchanged: `cron_restart` remains the source of truth.
 - Respect architecture rules:
@@ -31,7 +31,7 @@ Make PM2-based cron execution work end-to-end again:
     - On PM2 restarts (including `cron_restart`): run the job once per restart (current contract).
   - Implementation: parse PM2-provided metadata from environment (primary: `process.env.pm2_env` JSON `restart_time`; fallback to “run” if metadata is missing).
 - Make boot-time ordering compliant with architecture:
-  - Create a dedicated module orchestrator that owns the “health → ingest → publishing” sequence.
+  - Create a dedicated module orchestrator that owns the “ingest → publishing” sequence.
   - Keep `src/app/cron/bootSequence.ts` as a thin entry point that calls exactly one orchestrator.
 
 ## Implementation Steps
@@ -40,7 +40,6 @@ Make PM2-based cron execution work end-to-end again:
 - [x] Step 3: Wire the new orchestrator in `src/app/di/container.ts` and expose it via `src/modules/news-pipeline/public/index.ts`.
 - [x] Step 4: Refactor `src/app/cron/bootSequence.ts` to call the new orchestrator (no cross-module sequencing in `app/`).
 - [x] Step 5: Add `src/app/cron/pm2RunGate.ts` and apply it in:
-  - `src/app/cron/healthCron.ts`
   - `src/app/cron/newsIngestCron.ts`
   - `src/app/cron/publishingCron.ts`
 - [x] Step 6: Update `ecosystem.config.cjs`:
@@ -58,7 +57,6 @@ Make PM2-based cron execution work end-to-end again:
 - `src/app/di/container.ts` - wire the orchestrator.
 - `src/app/cron/bootSequence.ts` - call the orchestrator only.
 - `src/app/cron/pm2RunGate.ts` - determine “run on this start?”.
-- `src/app/cron/healthCron.ts` - gate job execution on initial PM2 start.
 - `src/app/cron/newsIngestCron.ts` - same.
 - `src/app/cron/publishingCron.ts` - same.
 - `ecosystem.config.cjs` - remove `autostart: false` from cron apps.

@@ -12,7 +12,6 @@ This folder documents each business module under `src/modules/` in a consistent 
 
 ## Modules in this repo
 
-- [`health`](./health.md)
 - [`news-ingestion`](./news-ingestion.md)
 - [`news-filtering`](./news-filtering.md)
 - [`news-pipeline`](./news-pipeline.md)
