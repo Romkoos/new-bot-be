@@ -94,6 +94,14 @@ Provider-agnostic interface for generating text from a prompt. The concrete Gemi
 
 Provider-agnostic interface for publishing Markdown text. The concrete Telegram adapter is a module-internal implementation.
 
+#### Telegram MarkdownV2 digest formatting
+
+When assembling the digest for Telegram (`MarkdownV2`), the post has:
+
+- a header title (`Йалла дайджест!`) **only when** the digest contains **0 items or 2+ items**
+- **no** header title when the digest contains **exactly 1 item** (to avoid redundant “digest” framing)
+- a footer link to the channel
+
 ### `DigestRepositoryPort`
 
 Persists digests and tracks publish state (`is_published`).
