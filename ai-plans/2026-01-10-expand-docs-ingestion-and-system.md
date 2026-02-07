@@ -20,7 +20,7 @@
 - Keep `docs/Ingestion.md` as either:
   - a short “moved” stub pointing to `docs/ingestion/README.md`, **or**
   - delete it and update all links (preferred if no external links depend on it).
-- Add a new folder `docs/modules/` for module deep dives (`health`, `news-ingestion`).
+- Add a new folder `docs/modules/` for module deep dives (`news-ingestion`, `publishing`, etc.).
 - Add a new folder `docs/system/` for end-to-end runtime lifecycle and orchestration.
 - Use the documentation template consistently:
   - Purpose/scope
@@ -49,7 +49,6 @@
   - [x] `docs/system/DependencyInjection.md` (container responsibilities, wiring rules, adapter selection)
 - [x] Step 4: Add module deep dives:
   - [x] `docs/modules/README.md` (index of modules and their public APIs)
-  - [x] `docs/modules/health.md`
   - [x] `docs/modules/news-ingestion.md` (module map: ports/adapters/dto/orchestrator/public)
 - [x] Step 5: Link hygiene:
   - [x] Delete `docs/Ingestion.md` and fix all references under `docs/`.

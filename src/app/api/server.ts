@@ -2,7 +2,6 @@ import express from "express";
 import { buildContainer } from "../di/container";
 import { digestsRoute } from "./routes/digestsRoute";
 import { filtersRoute } from "./routes/filtersRoute";
-import { healthRoute } from "./routes/healthRoute";
 import { llmConfigRoute } from "./routes/llmConfigRoute";
 import { llmModelsRoute } from "./routes/llmModelsRoute";
 import { llmsRoute } from "./routes/llmsRoute";
@@ -26,7 +25,6 @@ async function main(): Promise<void> {
   app.use(express.json());
 
   // All REST endpoints must be served under the `/api` prefix.
-  app.use("/api", healthRoute(container));
   app.use("/api", digestsRoute(container));
   app.use("/api", newsItemsRoute(container));
   app.use("/api", filtersRoute(container));

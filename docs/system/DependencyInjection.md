@@ -17,7 +17,6 @@ Composition root:
 
 Module Public APIs:
 
-- `src/modules/health/public/index.ts`
 - `src/modules/news-ingestion/public/index.ts`
 
 ## DI principles in this repo
@@ -74,7 +73,6 @@ Why:
 
 `AppContainer` exposes orchestrators (not adapters) to entry points:
 
-- `health.getHealthStatusOrchestrator`
 - `ingest.news` (ingestion orchestrator)
 
 It also exposes a shared logger:
@@ -113,19 +111,6 @@ flowchart LR
   MkRepo --> MkOrch
   MkOrch --> Orch
 ```
-
-## Wiring: Health module
-
-Health is a small example of hexagonal wiring:
-
-- Port: `TimePort`
-- Adapter: `SystemTimeAdapter`
-- Orchestrator: `GetHealthStatusOrchestrator`
-
-In the container:
-
-1. Create time adapter (via helper from module public API).
-2. Construct orchestrator with the port implementation.
 
 ## Wiring: Ingestion module (`news-ingestion`)
 

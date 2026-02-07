@@ -5,7 +5,6 @@ This module owns cross-module business flows that do not clearly belong to a sin
 ```mermaid
 flowchart LR
   BootEntry[cron_boot_sequence_entry] --> BootOrch[BootSequenceOrchestrator]
-  BootOrch --> Health[health_GetHealthStatusOrchestrator]
   BootOrch --> Ingest[news_ingestion_NewsIngestOrch]
   BootOrch --> Publish[publishing_PublishDigestOrchestrator]
 ```

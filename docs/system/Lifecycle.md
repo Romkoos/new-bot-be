@@ -16,13 +16,12 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 ### API entry point
 
 - `src/app/api/server.ts`
-- Example route: `src/app/api/routes/healthRoute.ts`
+- Example route: `src/app/api/routes/digestsRoute.ts`
 
 ### Cron entry points
 
-- Health cron: `src/app/cron/healthCron.ts`
 - Ingestion cron: `src/app/cron/newsIngestCron.ts`
-- Boot sequence (health → ingestion → publishing on PM2 start): `src/app/cron/bootSequence.ts`
+- Boot sequence (ingest → publishing on PM2 start): `src/app/cron/bootSequence.ts`
 
 ### CLI entry point
 
@@ -34,7 +33,6 @@ It also explains how **ingestion** participates as one of the scheduled/manual f
 
 ### Orchestrators (use-case owners)
 
-- Health: `src/modules/health/application/GetHealthStatusOrchestrator.ts`
 - Ingestion: `src/modules/news-ingestion/application/NewsIngestOrch.ts`
 - Boot-time ordering: `src/modules/news-pipeline/application/BootSequenceOrchestrator.ts`
 
@@ -77,7 +75,7 @@ flowchart LR
 
 ### Request handling
 
-For each incoming request (example: `GET /api/health`):
+For each incoming request (example: `GET /api/digests`):
 
 1. Route handler validates/parses input (minimal).
 2. Handler calls exactly one orchestrator instance from the container.
@@ -106,7 +104,7 @@ Cron entry points are long-running processes.
 
 On PM2 start/restart, the system runs a one-time sequence to ensure deterministic startup ordering:
 
-**health → ingest → publishing**
+**ingest → publishing**
 
 This is implemented by:
 
@@ -120,7 +118,6 @@ This is implemented by:
 flowchart LR
   PM2[PM2_start_or_restart] --> BootEntry[cron_boot_sequence_entry]
   BootEntry --> BootOrch[BootSequenceOrchestrator]
-  BootOrch --> HealthOrch[GetHealthStatusOrchestrator]
   BootOrch --> IngestOrch[NewsIngestOrch]
   BootOrch --> PublishOrch[PublishDigestOrchestrator]
 

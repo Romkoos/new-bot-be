@@ -15,7 +15,6 @@ Move responsibility for *when* cron jobs run out of the Node.js runtime and into
 - Cron entry points must **not** schedule themselves via `node-cron` anymore.
 - PM2 must be the **single source of truth** for schedules.
 - Each existing cron job must still exist and run at the same frequency:
-  - Health: every minute (`* * * * *`)
   - Ingestion: default every 5 minutes (`*/5 * * * *`) (currently configurable via `INGEST_CRON_SCHEDULE`)
   - Publishing: twice per hour (`0,30 * * * *`) (currently configurable via `PUBLISHING_CRON_SCHEDULE`)
 
@@ -32,14 +31,12 @@ Move responsibility for *when* cron jobs run out of the Node.js runtime and into
 
 ## Implementation Steps
 - [x] Step 1: Inventory current cron jobs and schedules and confirm they match docs/config defaults.
-- [x] Step 2: Update `src/app/cron/healthCron.ts` to run once on boot and not use `node-cron`.
 - [x] Step 3: Update `src/app/cron/newsIngestCron.ts` to run once on boot and not use `node-cron`.
 - [x] Step 4: Update `src/app/cron/publishingCron.ts` to run once on boot and not use `node-cron`.
 - [x] Step 5: Add PM2 ecosystem config with one app per cron job and matching `cron_restart` schedules.
 - [x] Step 6: Update docs to reflect PM2-driven scheduling (no behavior changes).
 
 ## Files to Modify/Create
-- `src/app/cron/healthCron.ts` - remove `node-cron` scheduling; run once per PM2 restart; keep logs/effects.
 - `src/app/cron/newsIngestCron.ts` - remove `node-cron` scheduling; run once per PM2 restart; keep logs/effects.
 - `src/app/cron/publishingCron.ts` - remove `node-cron` scheduling; run once per PM2 restart; keep logs/effects.
 - `ecosystem.config.cjs` (new) - PM2 process definitions for cron entry points with `cron_restart`.
@@ -49,7 +46,6 @@ Move responsibility for *when* cron jobs run out of the Node.js runtime and into
 ## Testing Strategy (if needed)
 - [ ] `npm run build` to ensure TypeScript compiles to `dist/`.
 - [ ] Smoke-run each built cron entry point once (manually) to confirm it runs one job and then stays alive:
-  - `node dist/app/cron/healthCron.js`
   - `node dist/app/cron/newsIngestCron.js`
   - `node dist/app/cron/publishingCron.js`
 - [ ] Validate log event names and payload shapes remain unchanged for start/done/error.

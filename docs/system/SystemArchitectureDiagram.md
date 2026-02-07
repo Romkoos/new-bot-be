@@ -20,14 +20,12 @@ flowchart LR
   DI[DI container]
 
   subgraph Orchestrators[Orchestrators]
-    HealthOrch[Health orchestrator]
     IngestOrch[News ingestion orchestrator]
     PublishOrch[Publishing orchestrator]
     BootOrch[Boot sequence orchestrator]
   end
 
   subgraph Adapters[Adapters and externals]
-    Time[System time]
     Sqlite[SQLite]
     Scraper[Scraper]
     LLM[LLM provider]
@@ -38,19 +36,16 @@ flowchart LR
   CRON --> DI
   CLI --> DI
 
-  DI --> HealthOrch
   DI --> IngestOrch
   DI --> PublishOrch
   DI --> BootOrch
 
-  HealthOrch --> Time
   IngestOrch --> Scraper
   IngestOrch --> Sqlite
   PublishOrch --> Sqlite
   PublishOrch --> LLM
   PublishOrch --> Telegram
 
-  BootOrch --> HealthOrch
   BootOrch --> IngestOrch
   BootOrch --> PublishOrch
 ```
@@ -82,13 +77,11 @@ flowchart LR
   PM2[PM2 start]
   BootEntry[Boot sequence entry point]
   BootOrch[Boot sequence orchestrator]
-  Health[Health orchestrator]
   Ingest[News ingestion orchestrator]
   Publish[Publishing orchestrator]
 
   PM2 --> BootEntry
   BootEntry --> BootOrch
-  BootOrch --> Health
   BootOrch --> Ingest
   BootOrch --> Publish
 ```

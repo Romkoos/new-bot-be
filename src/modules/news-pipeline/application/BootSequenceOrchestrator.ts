@@ -1,13 +1,7 @@
-import type { GetHealthStatusOrchestrator, GetHealthStatusResponse } from "../../health/public";
 import type { NewsIngestOrch, NewsIngestResult } from "../../news-ingestion/public";
 import type { PublishDigestOrchestrator, PublishDigestResult } from "../../publishing/public";
 
 export interface BootSequenceDeps {
-  /**
-   * Health use-case entry point.
-   */
-  readonly health: GetHealthStatusOrchestrator;
-
   /**
    * News ingestion use-case entry point.
    */
@@ -38,9 +32,8 @@ export interface BootSequenceResult {
   readonly durationMs: number;
 
   /**
-   * Health → ingest → publishing (strict ordering).
+   * Ingest → publishing (strict ordering).
    */
-  readonly health: BootSequenceStepResult<GetHealthStatusResponse>;
   readonly ingest: BootSequenceStepResult<NewsIngestResult>;
   readonly publishing: BootSequenceStepResult<PublishDigestResult>;
 }
@@ -50,7 +43,7 @@ export interface BootSequenceResult {
  *
  * Owns the cross-module flow:
  *
- * health → ingest → publishing
+ * ingest → publishing
  *
  * Design notes:
  * - This orchestrator is the single owner of ordering.
@@ -64,7 +57,6 @@ export class BootSequenceOrchestrator {
   public async run(): Promise<BootSequenceResult> {
     const startedAt = Date.now();
 
-    const health = runSyncStep(() => this.deps.health.run());
     const ingest = await runAsyncStep(() => this.deps.ingest.run({ dryRun: false }));
     const publishing = await runAsyncStep(() => this.deps.publishDigest.run());
 
@@ -72,22 +64,9 @@ export class BootSequenceOrchestrator {
 
     return {
       durationMs,
-      health,
       ingest,
       publishing,
     };
-  }
-}
-
-function runSyncStep<T>(fn: () => T): BootSequenceStepResult<T> {
-  const startedAt = Date.now();
-  try {
-    const value = fn();
-    const durationMs = Date.now() - startedAt;
-    return { ok: true, durationMs, value };
-  } catch (error) {
-    const durationMs = Date.now() - startedAt;
-    return { ok: false, durationMs, errorMessage: toErrorMessage(error) };
   }
 }
 
