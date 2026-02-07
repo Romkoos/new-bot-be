@@ -49,7 +49,7 @@ function formatDigestItemMdV2(rawItem: string): string {
   const firstDotIdx = trimmed.indexOf(".");
   if (firstDotIdx === -1) {
     const headline = trimmed;
-    return `\\- ${mdV2Bold(escapeMdV2(headline))}`;
+    return `${mdV2Bold(escapeMdV2(headline))}`;
   }
 
   const headlineRaw = trimmed.slice(0, firstDotIdx).trimEnd();
@@ -57,10 +57,10 @@ function formatDigestItemMdV2(rawItem: string): string {
 
   // Defensive: if headline is empty, treat the entire item as headline.
   if (headlineRaw.trim().length === 0) {
-    return `\\- ${mdV2Bold(escapeMdV2(trimmed))}`;
+    return `${mdV2Bold(escapeMdV2(trimmed))}`;
   }
 
-  return `\\- ${mdV2Bold(escapeMdV2(headlineRaw))}${escapeMdV2(restRaw)}`;
+  return `${mdV2Bold(escapeMdV2(headlineRaw))}${escapeMdV2(restRaw)}`;
 }
 
 function mdV2Bold(escapedText: string): string {
